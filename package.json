@@ -9,15 +9,16 @@
 		"lint": "next lint"
 	},
 	"dependencies": {
-		"@clerk/nextjs": "^6.2.0",
-		"@clerk/themes": "^2.2.0",
 		"@upstash/redis": "^1.37.0",
 		"canvas-confetti": "^1.9.4",
 		"geist": "^1.7.0",
 		"ioredis": "^5.10.1",
+		"jose": "^6.2.3",
 		"next": "^16.2.4",
 		"react": "^18.3.1",
-		"react-dom": "^18.3.1"
+		"react-dom": "^18.3.1",
+		"resend": "^6.12.4",
+		"stripe": "^22.2.0"
 	},
 	"devDependencies": {
 		"@types/canvas-confetti": "^1.9.0",

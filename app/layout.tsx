@@ -1,31 +1,25 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
-import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { Onest, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const cormorant = Cormorant_Garamond({
+const onest = Onest({
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-cormorant",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-onest",
   display: "swap",
 });
 
-const dmSans = DM_Sans({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
-  style: ["normal", "italic"],
-  variable: "--font-dm-sans",
+  weight: ["400", "500", "600"],
+  variable: "--font-mono",
   display: "swap",
 });
-
-/** Avoids static prerender errors when Clerk keys are missing or invalid during `next build`. */
-export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Relay — AI for Law, Kept Local",
+  title: "Relay — The AI legal assistant that never leaves your machine",
   description:
-    "Upload Anything, Track Everything, Share Nothing. Relay is the AI legal assistant that runs entirely on your machine. No cloud. No compromise.",
+    "Relay runs entirely on your own computer — your files, your research, and your clients' confidences never leave the building.",
 };
 
 export default function RootLayout({
@@ -34,10 +28,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${cormorant.variable} ${dmSans.variable}`}>
-      <body>
-        <ClerkProvider waitlistUrl="/">{children}</ClerkProvider>
-      </body>
+    <html lang="en" className={`${onest.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('relay-theme');if(t==='dark')document.documentElement.classList.add('dark');}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

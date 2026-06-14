@@ -3,7 +3,7 @@ type LogoMarkProps = {
   className?: string;
 };
 
-/** Relay mark from `Relay Logos/white_logo.svg` — tuned for dark backgrounds. */
+/** Relay mark from `public/relay-logos/white_logo.svg` — tuned for dark backgrounds. */
 export function LogoMark({ variant = "nav", className = "" }: LogoMarkProps) {
   const height = variant === "footer" ? 20 : 28;
   const width = Math.round((height * 10) / 11);
