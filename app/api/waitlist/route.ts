@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Redis from "ioredis";
+import { sendWaitlistConfirmation } from "@/lib/email";
 
 // Singleton — reused across warm invocations of the same serverless instance
 let redis: Redis | null = null;
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
   } else {
     console.warn("[waitlist] RELAY_REDIS_URL not set — skipping Redis write. Signup:", email);
   }
+
+  // Confirmation email — no-ops silently if RESEND_API_KEY is unset; never blocks the response.
+  await sendWaitlistConfirmation(email);
 
   return NextResponse.json({ success: true });
 }

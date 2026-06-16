@@ -125,69 +125,77 @@ Either way, **grab the license key** (`relay_live_…`) from the Stripe **custom
 
 ---
 
-## 5. Install the server — **dev mode first**
+## 5. Install + provision the server (native macOS, one script)
 
-On the firm's workstation (Linux), run the installer from the `relay` repo **without** a license
-key so it comes up in LAN/unlimited mode. This lets you fully verify the box before billing:
+> **Deployment is the native macOS `.pkg`, not Docker/Linux.** The firm server is
+> a Mac (Ollama runs on the Metal GPU). The full vendor runbook lives in the main
+> repo at [documents/ONBOARDING.md](../relay/documents/ONBOARDING.md); the
+> essentials:
 
 ```bash
-sudo bash deploy/server/install.sh --ts-authkey <ts-auth-key>
-#   --api-key omitted → it auto-generates RELAY_API_KEY (SAVE the printed value!)
-#   leave the "License key" prompt blank → dev/unlimited mode
+# On the firm's Mac, after transferring the .pkg:
+sudo installer -pkg ~/Downloads/Relay-Server-<ver>.pkg -target /
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+sudo /usr/local/relay-server/relay-provision.sh   # interactive, pauses at each step
 ```
-The installer writes `/opt/relay/.env`, brings up `ollama + relay-api + tailscale` under systemd
-(`relay.service`), and pulls the model. Then verify:
-```bash
-systemctl status relay
-curl http://localhost:8000/api/health         # expect 200
-```
-The server is now reachable on the tailnet at `https://relay-backend.<tailnet>.ts.net`.
+
+`relay-provision.sh` collects every value once (license key, admin email,
+Tailscale OAuth + auth key + tailnet, Resend key, your `ADMIN_API_KEY`), then —
+confirming before each step — installs deps, writes `relay.env`, joins Tailscale
+and serves HTTPS (auto-setting `RELAY_API_KEY` + `RELAY_SERVER_URL`), waits for
+health, **activates the subscription**, and **emails the admin their one-click
+invite**.
+
+**Prerequisite (browser, once):** enable **MagicDNS** and **HTTPS Certificates**
+at [login.tailscale.com/admin/dns](https://login.tailscale.com/admin/dns) — the
+script will not proceed until you confirm you've done this.
 
 ---
 
-## 6. Activate billing and switch the server onto the live license
+## 6. Activation (handled by the script, or by hand)
+
+Step 6 of `relay-provision.sh` calls this for you. To run it standalone:
 
 ```bash
-# 6a. Activate (from your laptop) — this starts the trial clock TODAY:
 curl -X POST https://relay-law.com/api/admin/activate \
   -H "x-admin-key: $ADMIN_API_KEY" -H 'content-type: application/json' \
   -d '{"licenseKey":"relay_live_…"}'
 #   → { ok: true, status: "trialing", trialEnd: … }
-
-# 6b. On the server, set the key (and TS_OAUTH_* if using in-app invites), then restart:
-sudo sed -i 's/^RELAY_LICENSE_KEY=.*/RELAY_LICENSE_KEY=relay_live_…/' /opt/relay/.env
-# (optional) append to /opt/relay/.env:
-#   TS_OAUTH_CLIENT_ID=…
-#   TS_OAUTH_CLIENT_SECRET=…
-#   TS_TAILNET=yourfirm.ts.net
-cd /opt/relay && docker compose restart relay-api
 ```
-Because relay-api boots with **no cached token**, it fetches the live `trialing` license in seconds
-(no 12h wait). Verify:
+
+Because relay-api boots with **no cached token**, the next service restart fetches
+the live `trialing` license in seconds (no 12h wait). The script does
+`launchctl kickstart -k system/com.relay.server` for you. Verify:
 ```bash
-docker compose logs relay-api | grep -i license     # "License refreshed: … status=trialing"
+tail -n 50 "/Library/Application Support/Relay/logs/server.err.log" | grep -i license
+#   → "License refreshed: … status=trialing"
 ```
 
 ---
 
-## 7. Get the first admin online (auto-promoted)
+## 7. The first admin comes online by email (no manual tailnet join)
 
-The **first user to ever sign in becomes the firm admin automatically** (`db_ensure_first_admin`).
-So have the firm's lead attorney go first:
+The firm admin is **whoever you set as `RELAY_ADMIN_EMAIL`** — not whoever connects
+first. `db_seed_admin()` makes that email an `admin` at startup, and the
+first-to-connect fallback is disabled whenever the var is set, so your test traffic
+can't claim it.
 
-1. On their laptop, install **Tailscale** and sign in **as themselves** (their firm SSO) → joins
-   the tailnet.
-2. Install the **Relay desktop app** → **Settings → Network**:
-   - Backend URL: `https://relay-backend.<tailnet>.ts.net`
-   - Access key: the `RELAY_API_KEY` from step 5.
-3. Use the app once. Their verified `Tailscale-User-Login` provisions their user row, and as the
-   first user they're promoted to `admin`.
-4. Confirm (from a tailnet device authenticated as them, or the app's Admin panel):
-   ```bash
-   curl https://relay-backend.<tailnet>.ts.net/api/admin/entitlement \
-     -H "Authorization: Bearer $RELAY_API_KEY"
-   #   → { seats: N, status: "trialing", active_seats: 1, is_valid: true }
-   ```
+`relay-provision.sh` Step 7 gets them onto the network: it mints a single-use
+Tailscale auth key for the admin and **emails them the same one-click invite every
+attorney gets**. The admin:
+
+1. Opens the email → installs the **Relay** app.
+2. Clicks **“Open in Relay”** (or pastes the invite code). The app installs/launches
+   Tailscale if needed, joins the tailnet with the embedded key, and self-configures
+   the server URL + access key.
+3. Lands in the app **already as admin** (their email == `RELAY_ADMIN_EMAIL`).
+
+Confirm from their app's Admin panel, or:
+```bash
+curl https://relay-backend.<tailnet>.ts.net/api/admin/entitlement \
+  -H "Authorization: Bearer $RELAY_API_KEY"
+#   → { seats: N, status: "trialing", active_seats: 1, is_valid: true }
+```
 
 ---
 
@@ -205,27 +213,29 @@ curl -X PATCH "https://relay-backend.<tailnet>.ts.net/api/admin/seats/teammate@f
 
 ---
 
-## 9. Invite another attorney to the tailnet
+## 9. Invite another attorney (email only)
 
-With `TS_OAUTH_*` + `TS_TAILNET` set (step 6b), an admin mints an invite from inside Relay (Admin →
-Invite), or:
+The admin opens **Admin panel → Invite attorney**, types the colleague's **email**, and hits
+**Send invite**. The server mints a single-use Tailscale auth key, packages it with the server URL +
+access key, and emails a one-click `relay://invite` link. Equivalent API call:
 ```bash
 curl -X POST "https://relay-backend.<tailnet>.ts.net/api/admin/invite" \
   -H "Authorization: Bearer $RELAY_API_KEY" \
-  -H 'content-type: application/json' -d '{"description":"Attorney invite"}'
-#   → { auth_key: "tskey-…", instructions: "…" }   (key expires in 7 days)
+  -H 'content-type: application/json' -d '{"email":"attorney@firm.com"}'
+#   → { ok: true, email: "attorney@firm.com", message: "Invite sent…" }
 ```
-Then the **new attorney**:
-1. Installs **Tailscale**, joins the firm's tailnet using that `auth_key`.
-2. Installs the **Relay app**, sets the same Backend URL + Access key (step 7.2), signs in.
-3. They appear in the seat list as a `member`; one seat is consumed.
+Then the **new attorney**: opens the email → installs **Relay** → clicks **“Open in Relay”** (or
+pastes the invite code). The app installs/launches Tailscale if missing, joins the tailnet with the
+embedded key, and self-configures. They appear in the seat list as a `member`; one seat is consumed.
+**No keys, URLs, or terminal on their end.**
 
-**Seat enforcement:** `/api/admin/invite` refuses to mint a key once `active_seats >= seats`, and
+**Requirements (all enforced):** `/api/admin/invite` returns `501` unless `TS_OAUTH_CLIENT_ID/SECRET`
++ `TS_TAILNET` **and** `RESEND_API_KEY` + `RELAY_SERVER_URL` are set — `relay-provision.sh` collects
+them.
+
+**Seat enforcement:** the endpoint refuses to mint a key once `active_seats >= seats`, and
 `require_seat` blocks the (N+1)th login — both point the admin to `relay-law.com/billing` to add
 seats. Adding seats in the Stripe portal raises the cap on the next license refresh.
-
-> No `TS_OAUTH_*`? The admin invites manually: Tailscale console → Settings → Keys → generate a key
-> → share it with the attorney, who joins as above.
 
 ---
 
@@ -234,9 +244,9 @@ seats. Adding seats in the Stripe portal raises the cap on the next license refr
 - [ ] `POST /api/stripe/checkout` → pending firm + license key on the Stripe customer.
 - [ ] `POST /api/admin/activate` → `status: trialing`.
 - [ ] `POST /api/license/validate` → token with `status: trialing, seats: N`.
-- [ ] Server `docker compose logs relay-api` shows `License refreshed: … status=trialing`.
-- [ ] First attorney signs in → is `admin` (`/api/admin/entitlement` works for them).
-- [ ] Invite + second attorney joins → appears as `member`, `active_seats` increments.
+- [ ] Server log (`/Library/Application Support/Relay/logs/server.err.log`) shows `License refreshed: … status=trialing`.
+- [ ] Admin (== `RELAY_ADMIN_EMAIL`) opens their emailed invite → lands as `admin`.
+- [ ] Admin emails a second attorney → they click the invite → appear as `member`, `active_seats` increments.
 - [ ] Exceed seats → invite/login blocked with a clear "add seats" message.
 - [ ] In the Stripe **test clock**, advance past the trial → first invoice charges the saved card.
 
@@ -298,6 +308,67 @@ admin. That's you.** No invite, no tailnet join needed locally.
 > The tailnet + `/api/admin/invite` only matter in **production**, when real attorneys on separate
 > machines join. The *first* admin is never invited — being first = admin.
 >
-> To also exercise the **license gate** (seat enforcement) locally: set `LICENSE_SIGNING_KEY` on the
-> site (generate the RS256 keypair), and on the backend set `RELAY_LICENSE_KEY=relay_live_…` +
-> `RELAY_LICENSE_URL=http://host.docker.internal:3000/api/license/validate`, then restart relay-api.
+> Section B runs in **dev mode** (no license enforcement). For the real gated flow, see the
+> production-flow section directly below.
+
+---
+
+## Appendix — Full production flow locally (real license enforcement)
+
+Section B above leaves `RELAY_LICENSE_KEY` blank (unlimited dev mode). To run the **real** flow
+where the license actually gates the app and seats are enforced:
+
+1. **Site has a signing key.** Generate the RS256 keypair and set `LICENSE_SIGNING_KEY` on the site
+   (single line — see §1a). Without it, `/api/license/validate` can't mint a token. Restart
+   `npm run dev`.
+2. **Activate** (start the trial) — §6a / Appendix A-4. Confirms `status: trialing`.
+3. **Confirm the token mints:**
+   ```powershell
+   Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/license/validate `
+     -ContentType "application/json" -Body '{"license_key":"relay_live_…"}'
+   #   → { token: "eyJ…" }
+   ```
+4. **Point the backend at the license** — in `relay/deploy/backend/.env`:
+   ```
+   RELAY_LICENSE_KEY=relay_live_…
+   RELAY_LICENSE_URL=http://host.docker.internal:3000/api/license/validate
+   ```
+   (Optional, for real signature checking: mount `license_public.pem` at
+   `/app/keys/license_public.pem`. If absent, the backend accepts the token unverified — fine for
+   local testing.) Restart relay-api.
+5. **Verify enforcement.** Seats come from signup (sign up with >1 to test multi-user). Distinct
+   identities need Tailscale, so locally simulate users with the `X-Relay-User` header:
+   ```powershell
+   Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/admin/entitlement `
+     -Headers @{ "Authorization" = "Bearer test"; "X-Relay-User" = "alice@firm.com" }
+   # repeat for bob@, carol@ … active_seats climbs; exceeding seats → 403 seat_limit_exceeded
+   ```
+
+### How a non-paying firm gets cut off (automatic — no manual step)
+There's **no "turn off" command**. Enforcement is automatic:
+```
+Firm stops paying → Stripe moves the sub active → past_due → canceled
+  → webhook updates the firm record's status
+  → backend's next license refresh (≤12h) gets "past_due"/"canceled"
+  → require_seat() returns 402 → users blocked
+```
+The backend caches the license up to ~48h and refreshes every 12h, so a lapsed firm loses access on
+the next refresh. Going **offline** doesn't help them — the cached token expires and the backend
+**fails closed** (`503 license_unreachable`). To cut a firm off immediately-ish, cancel their
+subscription in Stripe; it flows through on the next refresh.
+
+### What the relay side actually does (runtime)
+The whole client half lives in `relay/src/backend/app/licensing.py` + `auth.py`:
+- **On startup** (`start_background_refresh`): loads the last-known token from the DB, refreshes if
+  missing/expiring, and starts a thread that re-checks every **12h**.
+- **`_fetch_token()`**: POSTs `{license_key}` to `RELAY_LICENSE_URL`, gets back `{token}`.
+- **`_parse_entitlement()`**: verifies the RS256 JWT with the baked-in public key and decodes
+  `{ firm_id, seats, status, exp }` into an `Entitlement`, cached in memory + the DB.
+- **`current_entitlement()`**: returns the cached entitlement (no network call per request); only
+  re-fetches if the cache is missing/expired. Returns `unreachable` if it can't get a token.
+- **`require_seat()`** (a dependency on protected routes): the actual gate — reads
+  `current_entitlement()`, returns **402** for `past_due`/`canceled`, **503** for `unreachable`, and
+  **403** when `db_count_active_seats() > seats`. This is what "turns the app off" when unpaid.
+
+So calling **activate** (on the site) creates the trialing subscription; everything after is the
+backend *pulling* that status on its 12h cycle and `require_seat` enforcing it on every request.
