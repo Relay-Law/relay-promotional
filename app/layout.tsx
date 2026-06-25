@@ -26,7 +26,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Relay",
   description:
-    "Relay runs entirely on your own hardware — your files, your research, and your clients' confidences never leave the building. The local-first AI for the practice of law.",
+    "",
 };
 
 export default function RootLayout({

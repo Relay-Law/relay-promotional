@@ -120,22 +120,6 @@ function Orn({ className = "", children }: { className?: string; children: React
   );
 }
 
-/* ─── Corner stamp ─── */
-function Stamp({ gold, sec, label }: { gold?: boolean; sec: string; label: string }) {
-  return (
-    <div
-      aria-hidden="true"
-      className={`absolute z-[4] grid place-items-center rounded-full border-2 border-dashed border-[rgba(26,13,5,0.25)] text-[#1a0d05] shadow-[0_22px_60px_-20px_rgba(217,116,63,0.6)] ${gold ? "bg-gold" : "bg-coral"} -top-[22px] -right-[22px] w-[132px] h-[132px] max-[960px]:-top-4 max-[960px]:-right-4 max-[960px]:w-[100px] max-[960px]:h-[100px]`}
-    >
-      <div className="grid h-full w-full place-items-center p-3.5 text-center font-mono text-[9.5px] font-bold uppercase leading-[1.35] tracking-[0.14em]">
-        Relay
-        <b className="my-1 mb-[3px] block font-serif text-[22px] font-normal normal-case italic tracking-normal">{sec}</b>
-        {label}
-      </div>
-    </div>
-  );
-}
-
 /* ─── Waitlist Form ─── */
 function WaitlistForm() {
   const [email, setEmail] = useState("");
@@ -268,7 +252,7 @@ export default function Home() {
               Counsel<br />
               that <em>never</em> leaves<br />
               your machine.
-              <span className="mt-[1.7em] block font-mono text-[0.18em] font-medium uppercase tracking-[0.30em] text-t3">A local-first AI &nbsp;§&nbsp; for the practice of law</span>
+              <span className="mt-[0.85em] block font-serif text-[0.18em] font-normal italic normal-case tracking-[-0.01em] text-t2">A local-first AI for the practice of law.</span>
             </h1>
 
             <p className={`reveal ${lede} mx-auto mt-7 text-center max-[600px]:mt-[22px] max-[600px]:text-base`} style={{ ["--delay" as string]: "160ms" }}>
@@ -416,7 +400,6 @@ export default function Home() {
             </div>
             <div className="relative overflow-hidden rounded-xl border border-line bg-surface shadow-[0_40px_100px_-30px_rgba(0,0,0,0.7),0_0_0_1px_rgba(217,116,63,0.05)]">
               <div aria-hidden="true" className="pointer-events-none absolute inset-[-1px] rounded-xl bg-[linear-gradient(135deg,rgba(217,116,63,0.18),transparent_50%)] opacity-50" />
-              <Stamp sec="§ I" label="Filings" />
               <div className="flex items-center gap-2.5 border-b border-line bg-surface-2 px-3.5 py-[11px]">
                 <div className="flex gap-[7px]"><span className="h-2.5 w-2.5 rounded-full bg-[#f15c4f]" /><span className="h-2.5 w-2.5 rounded-full bg-[#f1bc40]" /><span className="h-2.5 w-2.5 rounded-full bg-[#4cc94a]" /></div>
                 <span className="ml-1.5 font-mono text-[11px] tracking-[0.06em] text-t3">citation check · Thorngate v. Meridian</span>
@@ -455,7 +438,6 @@ export default function Home() {
             </div>
             <div className="relative overflow-hidden rounded-xl border border-line bg-surface shadow-[0_40px_100px_-30px_rgba(0,0,0,0.7),0_0_0_1px_rgba(217,116,63,0.05)] min-[960px]:order-first">
               <div aria-hidden="true" className="pointer-events-none absolute inset-[-1px] rounded-xl bg-[linear-gradient(135deg,rgba(217,116,63,0.18),transparent_50%)] opacity-50" />
-              <Stamp gold sec="§ II" label="Matters" />
               <div className="flex items-center gap-2.5 border-b border-line bg-surface-2 px-3.5 py-[11px]">
                 <div className="flex gap-[7px]"><span className="h-2.5 w-2.5 rounded-full bg-[#f15c4f]" /><span className="h-2.5 w-2.5 rounded-full bg-[#f1bc40]" /><span className="h-2.5 w-2.5 rounded-full bg-[#4cc94a]" /></div>
                 <span className="ml-1.5 font-mono text-[11px] tracking-[0.06em] text-t3">matter workspace · ask anything</span>
@@ -494,7 +476,6 @@ export default function Home() {
             </div>
             <div className="relative overflow-hidden rounded-xl border border-line bg-surface shadow-[0_40px_100px_-30px_rgba(0,0,0,0.7),0_0_0_1px_rgba(217,116,63,0.05)]">
               <div aria-hidden="true" className="pointer-events-none absolute inset-[-1px] rounded-xl bg-[linear-gradient(135deg,rgba(217,116,63,0.18),transparent_50%)] opacity-50" />
-              <Stamp gold sec="§ III" label="Billing" />
               <div className="flex items-center gap-2.5 border-b border-line bg-surface-2 px-3.5 py-[11px]">
                 <div className="flex gap-[7px]"><span className="h-2.5 w-2.5 rounded-full bg-[#f15c4f]" /><span className="h-2.5 w-2.5 rounded-full bg-[#f1bc40]" /><span className="h-2.5 w-2.5 rounded-full bg-[#4cc94a]" /></div>
                 <span className="ml-1.5 font-mono text-[11px] tracking-[0.06em] text-t3">billing · review &amp; approve</span>
@@ -517,9 +498,9 @@ export default function Home() {
           <div className={`${wrap} reveal relative mb-[52px] text-center min-[760px]:mb-[72px]`}>
             <span className={`${mono} !text-[rgba(27,20,13,0.55)]`}>The Privacy Doctrine</span>
             <h2 className={`${display} ${h2Size} mt-[18px] mb-[22px] text-paper-ink [&_em]:!text-coral-deep`}>
-              We never see <em>anything.</em>
+              <em>We never see anything.</em>
               <br />
-              <span className="opacity-45">By design, not by policy.</span>
+              <span className="text-[rgba(27,20,13,0.55)]">By design, not by policy.</span>
             </h2>
             <p className="mx-auto max-w-[62ch] font-sans text-[16.5px] leading-[1.55] text-[rgba(27,20,13,0.65)] [&_em]:font-serif [&_em]:text-[1.08em] [&_em]:italic [&_em]:text-paper-ink">Every guarantee below is enforced at the <em>architecture</em> layer, not the contract layer. </p>
           </div>
@@ -574,7 +555,6 @@ export default function Home() {
                   <div>
                     <div className="mb-3 font-mono text-[10.5px] uppercase tracking-[0.16em] text-t3">Early adopter</div>
                     <div className="mb-2.5 font-serif text-[64px] font-normal leading-[0.9] tracking-[-0.03em] text-t1 max-[600px]:text-[52px]"><em className="italic text-coral">$50</em><span className="ml-1 align-middle font-mono text-[13px] uppercase tracking-[0.10em] text-t3">/mo</span></div>
-                    <div className="font-mono text-[12.5px] uppercase tracking-[0.06em] text-t3">per user · $0 setup</div>
                   </div>
                   <div>
                     <div className="mb-3 font-mono text-[10.5px] uppercase tracking-[0.16em] text-t3 line-through decoration-1">Standard</div>
@@ -640,9 +620,9 @@ export default function Home() {
               <p className="max-w-[32ch] font-serif text-xl italic leading-[1.5] tracking-[-0.01em] text-t2">The AI counsel that runs entirely on your machine.</p>
             </div>
             {[
-              ["Practice", [["Filings", "#features"], ["Matters", "#features"], ["Research", "#features"], ["Billing", "#features"]]],
-              ["Company", [["About", "#"], ["Contact", "mailto:support@relay-law.com"], ["Security", "#"], ["Doctrine", "#privacy"]]],
-              ["Resources", [["Documentation", "#"], ["System requirements", "#"], ["Privacy whitepaper", "#"], ["Retainer", "#pricing"]]],
+              ["Practice", [["Filings", "#features"], ["Matters", "#features"], ["Billing", "#features"]]],
+              ["Company", [["The Doctrine", "#privacy"], ["Retainer", "#pricing"], ["Contact", "mailto:support@relay-law.com"]]],
+              ["Get started", [["Early access", "#waitlist"], ["Join the waitlist", "#waitlist"]]],
             ].map(([heading, links]) => (
               <div key={heading as string}>
                 <h5 className="m-0 mb-[18px] font-mono text-[10.5px] font-medium uppercase tracking-[0.16em] text-coral">{heading as string}</h5>

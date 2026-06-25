@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { getStripe } from "@/lib/stripe";
-import { getFirmByLicenseKey, saveFirm } from "@/lib/store";
+import { ActivateError, activateFirm } from "@/lib/activate";
 
 export const runtime = "nodejs";
 
@@ -26,11 +25,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  const priceId = process.env.STRIPE_PRICE_ID;
-  if (!priceId) {
-    return NextResponse.json({ error: "STRIPE_PRICE_ID not configured" }, { status: 500 });
-  }
-
   let licenseKey: string;
   try {
     const body = await request.json();
@@ -38,57 +32,15 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "invalid request body" }, { status: 400 });
   }
-  if (!licenseKey) {
-    return NextResponse.json({ error: "licenseKey required" }, { status: 400 });
-  }
-
-  const firm = await getFirmByLicenseKey(licenseKey);
-  if (!firm) {
-    return NextResponse.json({ error: "unknown license key" }, { status: 404 });
-  }
-
-  // Idempotent: if already activated, just report the existing subscription.
-  if (firm.subscriptionId) {
-    return NextResponse.json({
-      ok: true,
-      alreadyActive: true,
-      subscriptionId: firm.subscriptionId,
-      status: firm.status,
-    });
-  }
-
-  const trialDays = Number(process.env.STRIPE_TRIAL_DAYS ?? "14");
 
   try {
-    const subscription = await getStripe().subscriptions.create({
-      customer: firm.stripeCustomerId,
-      items: [{ price: priceId, quantity: firm.seats }],
-      trial_period_days: trialDays > 0 ? trialDays : undefined,
-      // licenseKey lets the webhook merge this back into the existing firm record.
-      metadata: { licenseKey },
-      // If the card ever fails after the trial, cancel rather than dunning forever.
-      trial_settings: { end_behavior: { missing_payment_method: "cancel" } },
-    });
-
-    const item = subscription.items.data[0];
-    await saveFirm({
-      ...firm,
-      subscriptionId: subscription.id,
-      status: subscription.status,
-      currentPeriodEnd: item?.current_period_end ?? 0,
-      activatedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    });
-
-    return NextResponse.json({
-      ok: true,
-      subscriptionId: subscription.id,
-      status: subscription.status,
-      trialEnd: subscription.trial_end,
-      seats: firm.seats,
-    });
+    const result = await activateFirm(licenseKey);
+    return NextResponse.json(result);
   } catch (err) {
-    console.error("[activate] Stripe error:", err);
+    if (err instanceof ActivateError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    console.error("[activate] unexpected error:", err);
     return NextResponse.json({ error: "Could not activate subscription" }, { status: 502 });
   }
 }

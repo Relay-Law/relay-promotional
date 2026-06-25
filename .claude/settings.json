@@ -13,7 +13,19 @@
       "Bash(ls -la \"build/icons/icon.png\" \"build/icons/icon.icns\" \"build/icons/AppIcon.icns\" \"public/favicon.png\")",
       "Bash(file \"build/icons/icon.png\" \"public/favicon.png\")",
       "Bash(cd \"c:/Users/matth/VSC/LawyerApp/relay-promotional\" && cp \"/c/Users/matth/VSC/LawyerApp/relay/src/frontend/build/icons/icon.png\" app/icon.png && rm -f app/icon.svg && echo \"=== app/ icon files now ===\" && ls -la app/icon.* && file app/icon.png)",
-      "Bash(grep -rnB2 -A4 \"STRIPE_PRICE_ID\" app lib)"
+      "Bash(grep -rnB2 -A4 \"STRIPE_PRICE_ID\" app lib)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/api/waitlist)",
+      "Bash(curl -s -X POST http://localhost:3100/api/ops/seed)",
+      "Bash(node -e \"const d=JSON.parse\\(require\\('fs'\\).readFileSync\\('/tmp/firms.json','utf8'\\)\\);const p=d.firms.find\\(f=>!f.subscriptionId\\);console.log\\(p?p.licenseKey:'NONE'\\)\")",
+      "Bash(curl -s http://localhost:3100/api/ops/firms/__CMDSUB_OUTPUT__)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const o=JSON.parse\\(s\\);console.log\\('status:',o.firm.status,'| subId:',o.firm.subscriptionId,'| billing.status:',o.billing&&o.billing.status\\)}\\)\")",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(node --input-type=commonjs -e ' *)",
+      "Bash(npm view *)",
+      "Bash(AUTH_SECRET=\"test-secret-for-local-verification-only-1234567890\" OPS_ALLOWED_EMAILS=\"test@example.com\" npx next dev -p 3000)",
+      "Bash(curl -s http://localhost:3000/api/auth/providers)",
+      "Bash(curl -s -o /dev/null -w \"/ops/signin -> %{http_code}\\\\n\" http://localhost:3000/ops/signin)"
     ],
     "additionalDirectories": [
       "C:\\Users\\matth\\.claude\\commands",
