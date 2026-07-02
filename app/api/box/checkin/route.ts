@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FirmRecord, setFirmTelemetry } from "@/lib/store";
+import { getSignedManifest } from "@/lib/releases";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -72,11 +73,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "unknown license key" }, { status: 404 });
   }
 
-  // Update directive: the version ops wants this box on. The box compares it against its own running
-  // version and (Phase 3) applies it in its maintenance window. Phase 2 adds artifact URL + sha256 +
-  // signature to this response.
+  // Update directive: the version ops wants this box on. When the box is actually behind that target,
+  // attach the SIGNED manifest (raw bytes + signature) so the box can verify it against its baked-in
+  // key and pull each artifact through /api/box/artifact. Omitted (Phase 1 behavior) when there's no
+  // target, the box is already current, or no verified manifest exists (e.g. releases unconfigured).
+  const target = firm.targetVersion ?? null;
+  const reported = patch.relayVersion;
+  let update: { version: string; manifestRaw: string; manifestSig: string } | undefined;
+  if (target && reported && target !== reported) {
+    try {
+      const signed = await getSignedManifest(target);
+      if (signed) {
+        update = { version: target, manifestRaw: signed.manifestRaw, manifestSig: signed.signatureB64 };
+      }
+    } catch (err) {
+      console.error("[box/checkin] manifest lookup failed:", err);
+      // Non-fatal: fall back to the bare targetVersion; the box just won't update this cycle.
+    }
+  }
+
   return NextResponse.json({
-    targetVersion: firm.targetVersion ?? null,
+    targetVersion: target,
     updateStatus: firm.updateStatus ?? "idle",
+    ...(update ? { update } : {}),
   });
 }
