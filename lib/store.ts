@@ -43,7 +43,7 @@ export interface FirmRecord {
   /** Mirrors Stripe's cancel_at_period_end — true when the firm has scheduled a cancel. */
   cancelAtPeriodEnd?: boolean;
 
-  // ── Ops telemetry (all optional; written by the box's license poll) ──────────
+  // ── Ops telemetry (all optional; written by the box's daily check-in) ────────
   /** Human-friendly firm name shown in the ops dashboard. */
   firmName?: string;
   /** Backend version the box last reported (e.g. "0.3.1"). */
@@ -52,8 +52,10 @@ export interface FirmRecord {
   activeSeats?: number;
   /** Hostname the box reported — helps identify which machine. */
   hostname?: string;
-  /** ISO timestamp of the box's last poll. Drives the "online" indicator. */
-  lastHeartbeat?: string;
+  /** Overall health the box reported at its last check-in. */
+  boxHealth?: "ok" | "degraded" | "failing";
+  /** ISO timestamp of the box's last check-in. Drives the "online" indicator. */
+  lastSeenAt?: string;
   /** Version the team wants this box to update to (set from the dashboard). */
   targetVersion?: string;
   /** Lifecycle of an in-flight remote update. */
@@ -104,9 +106,20 @@ export function generateLicenseKey(): string {
   return `relay_live_${randomBytes(24).toString("hex")}`;
 }
 
+/**
+ * Parse a stored firm blob, migrating legacy field names on read so records written before a
+ * rename keep working without a backfill. Currently: `lastHeartbeat` → `lastSeenAt`.
+ */
+function parseFirm(raw: string): FirmRecord {
+  const rec = JSON.parse(raw) as FirmRecord & { lastHeartbeat?: string };
+  if (rec.lastHeartbeat && !rec.lastSeenAt) rec.lastSeenAt = rec.lastHeartbeat;
+  delete rec.lastHeartbeat;
+  return rec;
+}
+
 export async function getFirmByLicenseKey(licenseKey: string): Promise<FirmRecord | null> {
   const raw = await getRedis().get(firmKey(licenseKey));
-  return raw ? (JSON.parse(raw) as FirmRecord) : null;
+  return raw ? parseFirm(raw) : null;
 }
 
 export async function getLicenseKeyBySubscription(subscriptionId: string): Promise<string | null> {
@@ -142,7 +155,7 @@ export async function listFirms(): Promise<FirmRecord[]> {
   const raws = await client.mget(keys.map(firmKey));
   const firms = raws
     .filter((r): r is string => Boolean(r))
-    .map((r) => JSON.parse(r) as FirmRecord);
+    .map(parseFirm);
   return firms.sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
 }
 

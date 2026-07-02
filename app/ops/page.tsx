@@ -114,7 +114,7 @@ export default function FleetPage() {
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
                           <span style={{ width: 8, height: 8, borderRadius: "50%", background: online ? "var(--ok)" : "var(--text-4)" }} />
                           <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>
-                            {f.lastHeartbeat ? timeAgo(f.lastHeartbeat) : "never"}
+                            {f.lastSeenAt ? timeAgo(f.lastSeenAt) : "never"}
                           </span>
                         </span>
                       </td>

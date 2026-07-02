@@ -8,10 +8,10 @@ export function isDeployed(f: Pick<FirmRecord, "subscriptionId" | "status">): bo
   return Boolean(f.subscriptionId) || ["trialing", "active", "past_due"].includes(f.status);
 }
 
-/** Online if it polled within the last 30 minutes. */
-export function isOnline(f: Pick<FirmRecord, "lastHeartbeat">): boolean {
-  if (!f.lastHeartbeat) return false;
-  return Date.now() - new Date(f.lastHeartbeat).getTime() < 30 * 60_000;
+/** Online if it checked in within the last 30 minutes. */
+export function isOnline(f: Pick<FirmRecord, "lastSeenAt">): boolean {
+  if (!f.lastSeenAt) return false;
+  return Date.now() - new Date(f.lastSeenAt).getTime() < 30 * 60_000;
 }
 
 /** Show the prefix + last 4 so a key is recognizable without exposing the whole thing on screen. */

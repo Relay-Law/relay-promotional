@@ -41,7 +41,7 @@ export async function POST() {
       relayVersion: "0.3.1",
       activeSeats: 4,
       hostname: "meridian-box.local",
-      lastHeartbeat: iso(4 * 60_000),
+      lastSeenAt: iso(4 * 60_000),
       updateStatus: "idle",
       updatedAt: iso(4 * 60_000),
     },
@@ -59,7 +59,7 @@ export async function POST() {
       relayVersion: "0.2.0",
       activeSeats: 2,
       hostname: "quillberg-mini.local",
-      lastHeartbeat: iso(3 * 86_400_000), // offline (> 30 min)
+      lastSeenAt: iso(3 * 86_400_000), // offline (> 30 min)
       cancelAtPeriodEnd: true,
       updateStatus: "idle",
       updatedAt: iso(3 * 86_400_000),

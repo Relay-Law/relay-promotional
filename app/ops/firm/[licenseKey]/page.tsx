@@ -96,7 +96,7 @@ export default function FirmDetailPage() {
           <span style={badgeStyle(deployed ? "ok" : "muted")}>{deployed ? "Deployed" : "Pending"}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "var(--text-3)", fontSize: 13 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: online ? "var(--ok)" : "var(--text-4)" }} />
-            {firm.lastHeartbeat ? `seen ${timeAgo(firm.lastHeartbeat)}` : "never seen"}
+            {firm.lastSeenAt ? `seen ${timeAgo(firm.lastSeenAt)}` : "never seen"}
           </span>
         </div>
         <p style={{ color: "var(--text-3)", margin: "6px 0 0", fontSize: 14 }}>{firm.email ?? "no billing email"}</p>
@@ -112,9 +112,10 @@ export default function FirmDetailPage() {
           <section style={card}>
             <h2 style={cardTitle}>Telemetry</h2>
             <Field label="Backend version" value={firm.relayVersion ?? "—"} />
+            <Field label="Health" value={firm.boxHealth ?? "—"} />
             <Field label="Active seats" value={firm.activeSeats != null ? `${firm.activeSeats} / ${firm.seats}` : `— / ${firm.seats}`} />
             <Field label="Hostname" value={firm.hostname ?? "—"} />
-            <Field label="Last heartbeat" value={firm.lastHeartbeat ? timeAgo(firm.lastHeartbeat) : "never"} />
+            <Field label="Last seen" value={firm.lastSeenAt ? timeAgo(firm.lastSeenAt) : "never"} />
             <Field label="Target version" value={firm.targetVersion ?? "—"} />
             <Field label="Update status" value={firm.updateStatus ?? "idle"} />
             {firm.updateError && <Field label="Update error" value={firm.updateError} />}
