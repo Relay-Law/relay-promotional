@@ -4,7 +4,7 @@ import { randomBytes } from "crypto";
 // Singleton — same pattern as app/api/waitlist/route.ts.
 let redis: Redis | null = null;
 
-function getRedis(): Redis {
+export function getRedis(): Redis {
   if (!redis) {
     const url = process.env.RELAY_REDIS_URL;
     if (!url) throw new Error("RELAY_REDIS_URL is not set");
@@ -62,6 +62,10 @@ export interface FirmRecord {
   updateStatus?: "idle" | "pending" | "updating" | "updated" | "failed";
   /** Last update error, if updateStatus === "failed". */
   updateError?: string;
+  /** ISO timestamp of the box's last successful version change (stamped when it reports "updated"). */
+  lastUpdatedAt?: string;
+  /** The version the box last confirmed healthy — its rollback floor (box-reported, Phase 3). */
+  lastKnownGoodVersion?: string;
 
   updatedAt: string;
 }

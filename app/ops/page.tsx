@@ -2,20 +2,26 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { FirmRecord } from "@/lib/store";
-import { OpsNav, badgeStyle, isDeployed, isOnline, maskKey, timeAgo } from "@/app/ops/ops-ui";
+import { OpsNav, badgeStyle, isDeployed, isOnline, maskKey, timeAgo, updateAvailable } from "@/app/ops/ops-ui";
 
 export default function FleetPage() {
   const [firms, setFirms] = useState<FirmRecord[] | null>(null);
+  const [stable, setStable] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [promoteVal, setPromoteVal] = useState("");
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch("/api/ops/firms", { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load fleet");
+      const [firmsRes, relRes] = await Promise.all([
+        fetch("/api/ops/firms", { cache: "no-store" }),
+        fetch("/api/ops/releases", { cache: "no-store" }),
+      ]);
+      const data = await firmsRes.json();
+      if (!firmsRes.ok) throw new Error(data.error ?? "Failed to load fleet");
       setFirms(data.firms as FirmRecord[]);
+      if (relRes.ok) setStable(((await relRes.json()).stable as string | null) ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load fleet");
       setFirms([]);
@@ -31,6 +37,46 @@ export default function FleetPage() {
     try {
       await fetch(`/api/ops/${action}`, { method: "POST" });
       await load();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** One-click: point a firm at the promoted stable version. */
+  async function update(licenseKey: string, version: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/ops/firms/${encodeURIComponent(licenseKey)}/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Update failed");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Update failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function promote() {
+    const version = promoteVal.trim();
+    if (!version) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/ops/releases/promote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Promote failed");
+      setPromoteVal("");
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Promote failed");
     } finally {
       setBusy(false);
     }
@@ -58,6 +104,23 @@ export default function FleetPage() {
               Refresh
             </button>
           </div>
+        </div>
+
+        {/* Stable channel — the version the fleet's one-click "Update" targets. */}
+        <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <span className="mono" style={{ fontSize: 11, color: "var(--text-3)" }}>
+            STABLE CHANNEL
+          </span>
+          <span style={badgeStyle(stable ? "ok" : "muted")}>{stable ?? "none promoted"}</span>
+          <input
+            value={promoteVal}
+            onChange={(e) => setPromoteVal(e.target.value)}
+            placeholder="e.g. 0.4.0"
+            style={{ padding: "8px 11px", borderRadius: 8, border: "1px solid var(--line-strong)", background: "var(--bg)", color: "var(--text-1)", fontSize: 13, width: 120, fontFamily: "var(--mono)" }}
+          />
+          <button className="btn-ghost" style={smallBtn} disabled={busy || !promoteVal.trim()} onClick={promote}>
+            Promote to stable
+          </button>
         </div>
 
         {error && (
@@ -109,7 +172,12 @@ export default function FleetPage() {
                       <td style={td}>
                         {f.activeSeats != null ? `${f.activeSeats}/${f.seats}` : f.seats}
                       </td>
-                      <td style={td}>{f.relayVersion ?? <span style={{ color: "var(--text-4)" }}>—</span>}</td>
+                      <td style={td}>
+                        <div>{f.relayVersion ?? <span style={{ color: "var(--text-4)" }}>—</span>}</div>
+                        {f.lastUpdatedAt && (
+                          <div style={{ color: "var(--text-4)", fontSize: 11.5 }}>updated {timeAgo(f.lastUpdatedAt)}</div>
+                        )}
+                      </td>
                       <td style={td}>
                         <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
                           <span style={{ width: 8, height: 8, borderRadius: "50%", background: online ? "var(--ok)" : "var(--text-4)" }} />
@@ -119,8 +187,23 @@ export default function FleetPage() {
                         </span>
                       </td>
                       <td style={{ ...td, fontFamily: "var(--mono)", fontSize: 12 }}>{maskKey(f.licenseKey)}</td>
-                      <td style={td}>
-                        <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>{f.updateStatus ?? "idle"}</span>
+                      <td style={td} onClick={(e) => e.stopPropagation()}>
+                        {f.updateStatus === "pending" || f.updateStatus === "updating" ? (
+                          <span style={badgeStyle("warn")}>{f.updateStatus}</span>
+                        ) : updateAvailable(f.relayVersion, stable) ? (
+                          <button
+                            className="btn-ghost"
+                            style={{ ...smallBtn, color: "var(--coral)", borderColor: "var(--line-coral)" }}
+                            disabled={busy}
+                            onClick={() => update(f.licenseKey, stable!)}
+                          >
+                            Update → {stable}
+                          </button>
+                        ) : f.relayVersion && stable ? (
+                          <span style={{ color: "var(--ok)", fontSize: 12.5 }}>up to date</span>
+                        ) : (
+                          <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>{f.updateStatus ?? "idle"}</span>
+                        )}
                       </td>
                     </tr>
                   );

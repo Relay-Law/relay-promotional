@@ -48,6 +48,13 @@ export async function POST(request: NextRequest) {
   const st = body.update_status;
   if (st === "idle" || st === "pending" || st === "updating" || st === "updated" || st === "failed") {
     patch.updateStatus = st;
+    // On a confirmed successful update, stamp when it landed and record the box's new floor.
+    if (st === "updated") {
+      patch.lastUpdatedAt = new Date().toISOString();
+      if (typeof body.server_version === "string" && body.server_version.trim()) {
+        patch.lastKnownGoodVersion = body.server_version.trim();
+      }
+    }
   }
   if (typeof body.update_error === "string") {
     patch.updateError = body.update_error;

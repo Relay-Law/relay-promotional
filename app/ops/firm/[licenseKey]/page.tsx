@@ -23,15 +23,23 @@ export default function FirmDetailPage() {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [targetVersion, setTargetVersion] = useState("");
+  const [releases, setReleases] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch(`/api/ops/firms/${encodeURIComponent(licenseKey)}`, { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load firm");
+      const [firmRes, relRes] = await Promise.all([
+        fetch(`/api/ops/firms/${encodeURIComponent(licenseKey)}`, { cache: "no-store" }),
+        fetch(`/api/ops/releases`, { cache: "no-store" }),
+      ]);
+      const data = await firmRes.json();
+      if (!firmRes.ok) throw new Error(data.error ?? "Failed to load firm");
       setFirm(data.firm as FirmRecord);
       setBilling(data.billing as Billing | null);
+      if (relRes.ok) {
+        const rel = await relRes.json();
+        setReleases((rel.releases as { version: string }[] | undefined)?.map((r) => r.version) ?? []);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load firm");
     }
@@ -167,17 +175,24 @@ export default function FirmDetailPage() {
           </div>
 
           <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
-            <span className="mono" style={{ fontSize: 11 }}>Set target version</span>
+            <span className="mono" style={{ fontSize: 11 }}>Pin an exact version <span style={{ color: "var(--text-4)" }}>(advanced)</span></span>
             <p style={{ color: "var(--text-4)", fontSize: 12, margin: "6px 0 10px" }}>
-              Records the version this box should run. The box-side updater that pulls + installs it is not wired yet (deferred).
+              For canarying a firm ahead of the stable channel, or rolling back to an older release. Most
+              updates should use the one-click <strong>Update</strong> button on the Fleet page.
             </p>
             <div style={{ display: "flex", gap: 10 }}>
               <input
+                list="release-versions"
                 value={targetVersion}
                 onChange={(e) => setTargetVersion(e.target.value)}
                 placeholder="e.g. 0.3.2"
                 style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--line-strong)", background: "var(--bg)", color: "var(--text-1)", fontSize: 14, width: 160, fontFamily: "var(--mono)" }}
               />
+              <datalist id="release-versions">
+                {releases.map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
               <button className="btn-ghost" disabled={busy || !targetVersion.trim()} onClick={() => action("update", { version: targetVersion.trim() }, "Target set")}>
                 Set target
               </button>
