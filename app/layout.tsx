@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
-import { Onest, Inter_Tight, JetBrains_Mono } from "next/font/google";
+import { Onest, Inter_Tight, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 
 const onest = Onest({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-onest",
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-fraunces",
   display: "swap",
 });
 
@@ -24,9 +31,9 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Relay — Counsel that never leaves your machine",
+  title: "Relay",
   description:
-    "Relay runs entirely on your own hardware — your files, your research, and your clients' confidences never leave the building. The local-first AI for the practice of law.",
+    "",
 };
 
 export default function RootLayout({
@@ -37,7 +44,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${onest.variable} ${interTight.variable} ${jetbrainsMono.variable}`}
+      className={`${onest.variable} ${interTight.variable} ${jetbrainsMono.variable} ${fraunces.variable}`}
     >
       <body>{children}</body>
     </html>

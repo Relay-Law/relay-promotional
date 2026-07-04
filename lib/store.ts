@@ -4,7 +4,7 @@ import { randomBytes } from "crypto";
 // Singleton — same pattern as app/api/waitlist/route.ts.
 let redis: Redis | null = null;
 
-function getRedis(): Redis {
+export function getRedis(): Redis {
   if (!redis) {
     const url = process.env.RELAY_REDIS_URL;
     if (!url) throw new Error("RELAY_REDIS_URL is not set");
@@ -40,6 +40,33 @@ export interface FirmRecord {
   activatedAt?: string | null;
   /** Optional: bind the license to a specific tailnet so a key can't be reused elsewhere. */
   tailnetId?: string;
+  /** Mirrors Stripe's cancel_at_period_end — true when the firm has scheduled a cancel. */
+  cancelAtPeriodEnd?: boolean;
+
+  // ── Ops telemetry (all optional; written by the box's daily check-in) ────────
+  /** Human-friendly firm name shown in the ops dashboard. */
+  firmName?: string;
+  /** Backend version the box last reported (e.g. "0.3.1"). */
+  relayVersion?: string;
+  /** Seats actually in use, as counted by the box (vs. the licensed `seats`). */
+  activeSeats?: number;
+  /** Hostname the box reported — helps identify which machine. */
+  hostname?: string;
+  /** Overall health the box reported at its last check-in. */
+  boxHealth?: "ok" | "degraded" | "failing";
+  /** ISO timestamp of the box's last check-in. Drives the "online" indicator. */
+  lastSeenAt?: string;
+  /** Version the team wants this box to update to (set from the dashboard). */
+  targetVersion?: string;
+  /** Lifecycle of an in-flight remote update. */
+  updateStatus?: "idle" | "pending" | "updating" | "updated" | "failed";
+  /** Last update error, if updateStatus === "failed". */
+  updateError?: string;
+  /** ISO timestamp of the box's last successful version change (stamped when it reports "updated"). */
+  lastUpdatedAt?: string;
+  /** The version the box last confirmed healthy — its rollback floor (box-reported, Phase 3). */
+  lastKnownGoodVersion?: string;
+
   updatedAt: string;
 }
 
@@ -47,6 +74,9 @@ const firmKey = (licenseKey: string) => `firm:${licenseKey}`;
 const keyBySub = (subscriptionId: string) => `firmKeyBySub:${subscriptionId}`;
 const keyByCustomer = (customerId: string) => `firmKeyByCustomer:${customerId}`;
 const leaseKey = (subscriptionId: string) => `lease:${subscriptionId}`;
+
+/** Set of every firm's license key — lets the ops dashboard enumerate the fleet. */
+const FIRMS_INDEX = "firms:index";
 
 /**
  * A hardware financing plan. Separate from FirmRecord on purpose — a lease is a finite
@@ -80,9 +110,20 @@ export function generateLicenseKey(): string {
   return `relay_live_${randomBytes(24).toString("hex")}`;
 }
 
+/**
+ * Parse a stored firm blob, migrating legacy field names on read so records written before a
+ * rename keep working without a backfill. Currently: `lastHeartbeat` → `lastSeenAt`.
+ */
+function parseFirm(raw: string): FirmRecord {
+  const rec = JSON.parse(raw) as FirmRecord & { lastHeartbeat?: string };
+  if (rec.lastHeartbeat && !rec.lastSeenAt) rec.lastSeenAt = rec.lastHeartbeat;
+  delete rec.lastHeartbeat;
+  return rec;
+}
+
 export async function getFirmByLicenseKey(licenseKey: string): Promise<FirmRecord | null> {
   const raw = await getRedis().get(firmKey(licenseKey));
-  return raw ? (JSON.parse(raw) as FirmRecord) : null;
+  return raw ? parseFirm(raw) : null;
 }
 
 export async function getLicenseKeyBySubscription(subscriptionId: string): Promise<string | null> {
@@ -97,13 +138,65 @@ export async function getLicenseKeyByCustomer(customerId: string): Promise<strin
 export async function saveFirm(record: FirmRecord): Promise<void> {
   const client = getRedis();
   const value = JSON.stringify({ ...record, updatedAt: new Date().toISOString() });
-  const writes = [
+  const writes: Promise<unknown>[] = [
     client.set(firmKey(record.licenseKey), value),
     client.set(keyByCustomer(record.stripeCustomerId), record.licenseKey),
+    // Fleet index — so the ops dashboard can enumerate firms (Redis is keyed per license key).
+    client.sadd(FIRMS_INDEX, record.licenseKey),
   ];
   // The subscription index only exists once a subscription does (i.e. after activation).
   if (record.subscriptionId) {
     writes.push(client.set(keyBySub(record.subscriptionId), record.licenseKey));
   }
   await Promise.all(writes);
+}
+
+/** Every firm in the fleet, newest-updated first. Backed by the `firms:index` set. */
+export async function listFirms(): Promise<FirmRecord[]> {
+  const client = getRedis();
+  const keys = await client.smembers(FIRMS_INDEX);
+  if (keys.length === 0) return [];
+  const raws = await client.mget(keys.map(firmKey));
+  const firms = raws
+    .filter((r): r is string => Boolean(r))
+    .map(parseFirm);
+  return firms.sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? ""));
+}
+
+/**
+ * Merge a partial telemetry patch into a firm record (written by the box's poll).
+ * No-op if the key is unknown. Always refreshes `updatedAt`.
+ */
+export async function setFirmTelemetry(
+  licenseKey: string,
+  patch: Partial<FirmRecord>,
+): Promise<FirmRecord | null> {
+  const firm = await getFirmByLicenseKey(licenseKey);
+  if (!firm) return null;
+  const merged: FirmRecord = { ...firm, ...patch, licenseKey };
+  await saveFirm(merged);
+  return merged;
+}
+
+/** Set the version the team wants a box to update to. */
+export async function setFirmTarget(licenseKey: string, version: string): Promise<FirmRecord | null> {
+  return setFirmTelemetry(licenseKey, { targetVersion: version, updateStatus: "pending" });
+}
+
+/**
+ * One-time backfill: seed `firms:index` from any existing `firm:*` keys that predate the index.
+ * Safe to run repeatedly. Returns the number of keys indexed.
+ */
+export async function reindexFirms(): Promise<number> {
+  const client = getRedis();
+  const prefix = "firm:";
+  let cursor = "0";
+  const licenseKeys: string[] = [];
+  do {
+    const [next, batch] = await client.scan(cursor, "MATCH", `${prefix}*`, "COUNT", 200);
+    cursor = next;
+    for (const k of batch) licenseKeys.push(k.slice(prefix.length));
+  } while (cursor !== "0");
+  if (licenseKeys.length > 0) await client.sadd(FIRMS_INDEX, ...licenseKeys);
+  return licenseKeys.length;
 }

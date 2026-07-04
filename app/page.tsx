@@ -1,27 +1,17 @@
 "use client";
 
-import confetti from "canvas-confetti";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
-/* ─── Confetti ─── */
-function fireConfetti() {
-  const colors = ["#d9743f", "#e89866", "#faf7f0", "#b85a28", "#c79a4a"];
-  const common = { particleCount: 60, spread: 70, startVelocity: 55, ticks: 200, colors, scalar: 0.9 };
-  confetti({ ...common, origin: { x: 0, y: 1 }, angle: 60 });
-  confetti({ ...common, origin: { x: 1, y: 1 }, angle: 120 });
-  setTimeout(() => {
-    confetti({ ...common, particleCount: 40, origin: { x: 0, y: 1 }, angle: 60 });
-    confetti({ ...common, particleCount: 40, origin: { x: 1, y: 1 }, angle: 120 });
-  }, 180);
-}
-
-/* ─── Scroll Reveal ─── */
+/* ─── Scroll reveal (toggles .reveal → .in via IntersectionObserver) ─── */
 function useScrollReveal() {
   useEffect(() => {
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); }
+          if (e.isIntersecting) {
+            e.target.classList.add("in");
+            io.unobserve(e.target);
+          }
         });
       },
       { rootMargin: "0px 0px -8% 0px", threshold: 0.08 }
@@ -31,102 +21,33 @@ function useScrollReveal() {
   }, []);
 }
 
-/* ─── Hero anim trigger ─── */
-function useHeroAnim() {
-  useEffect(() => {
-    const id = requestAnimationFrame(() =>
-      requestAnimationFrame(() => document.body.setAttribute("data-anim-ready", ""))
-    );
-    return () => {
-      cancelAnimationFrame(id);
-      document.body.removeAttribute("data-anim-ready");
-    };
-  }, []);
-}
+/* ─── small inline-style helpers for the mock panels ─── */
+const ruled = { lineHeight: "34px" } as React.CSSProperties;
+const lineMuted: React.CSSProperties = { fontSize: 14, color: "var(--ink-65)", lineHeight: "34px" };
+const lineInk: React.CSSProperties = { fontSize: "14.5px", color: "var(--ink)", lineHeight: "34px" };
+const serifLine: React.CSSProperties = { fontFamily: "var(--serif)", fontStyle: "italic", fontSize: 15, color: "var(--ink)" };
+const labelMini: React.CSSProperties = {
+  fontFamily: "var(--sans)", fontSize: 10, fontWeight: 500, letterSpacing: ".18em",
+  textTransform: "uppercase", color: "var(--ac)", lineHeight: "34px",
+};
+const statusLine: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: 10, fontFamily: "var(--sans)",
+  fontSize: 12, color: "var(--ink-45)", lineHeight: "34px", marginTop: 6,
+};
+const greenDot: React.CSSProperties = { width: 7, height: 7, borderRadius: "50%", background: "var(--green)", display: "block" };
+const rowBetween: React.CSSProperties = { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, lineHeight: "34px" };
+const ac = (color: string) => ({ ["--ac" as string]: color }) as React.CSSProperties;
 
-/* ─── Live "0 KB sent" status counter ─── */
-function useLiveStatus() {
-  const [uptime, setUptime] = useState("00:00");
-  useEffect(() => {
-    let secs = 0;
-    const id = setInterval(() => {
-      secs++;
-      const mm = String(Math.floor(secs / 60)).padStart(2, "0");
-      const ss = String(secs % 60).padStart(2, "0");
-      setUptime(`${mm}:${ss}`);
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
-  return uptime;
-}
-
-/* ─── SVG helpers ─── */
-const CheckSmSvg = () => (
-  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 8.5l3.2 3L13 5" />
-  </svg>
-);
-const MailSvg = () => (
-  <svg viewBox="0 0 18 18" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2.5" y="4" width="13" height="10" rx="1.5" />
-    <path d="M3 5.5l6 4 6-4" />
-  </svg>
-);
-const WebSvg = () => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-    <circle cx="12" cy="12" r="9" />
-    <path d="M3 12h18" />
-    <path d="M12 3c2.6 2.5 2.6 15.5 0 18" />
-    <path d="M12 3c-2.6 2.5-2.6 15.5 0 18" />
-  </svg>
-);
-const MacSvg = () => (
-  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="4.5" />
-    <path d="M12 3.5v8" />
-    <path d="M7 8.5v1.4" />
-    <path d="M16 8.5v1.4" />
-    <path d="M8 14.5c1.6 1.7 6.4 1.7 8 0" />
-  </svg>
-);
-const WindowsSvg = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-    <rect x="3" y="3" width="8" height="8" />
-    <rect x="13" y="3" width="8" height="8" />
-    <rect x="3" y="13" width="8" height="8" />
-    <rect x="13" y="13" width="8" height="8" />
-  </svg>
-);
-
-/* ─── Brand mark ─── */
-const Brand = ({ className = "brand" }: { className?: string }) => (
-  <a className={className} href="#top" aria-label="Relay">
-    {/* eslint-disable-next-line @next/next/no-img-element */}
-    <img className="brand-mark" src="/relay-logos/white_relay.svg" alt="Relay" />
-  </a>
-);
-
-/* ─── Waitlist Form ─── */
+/* ─── Waitlist form (posts to /api/waitlist) ─── */
 function WaitlistForm() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const formRef = useRef<HTMLFormElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const val = email.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
-      if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.style.transition = "box-shadow 200ms";
-        inputRef.current.style.boxShadow = "0 0 0 2px rgba(217,116,63,0.5)";
-        setTimeout(() => { if (inputRef.current) inputRef.current.style.boxShadow = ""; }, 900);
-      }
-      return;
-    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return;
     setLoading(true);
     try {
       await fetch("/api/waitlist", {
@@ -135,440 +56,425 @@ function WaitlistForm() {
         body: JSON.stringify({ email: val }),
       });
     } catch {}
-    setName(val.split("@")[0]);
     setSent(true);
     setLoading(false);
     setEmail("");
-    fireConfetti();
   }
 
   return (
-    <form
-      ref={formRef}
-      id="cta-form"
-      className={`cmd-input reveal${sent ? " sent" : ""}`}
-      style={{ ["--delay" as string]: "180ms" }}
-      onSubmit={handleSubmit}
-      noValidate
-    >
-      <span className="cmd-icon" aria-hidden="true"><MailSvg /></span>
+    <form className="rl-form reveal" onSubmit={handleSubmit} noValidate>
       <input
-        ref={inputRef}
         type="email"
-        placeholder={sent ? `See you soon, ${name}` : "you@yourfirm.com"}
-        required
+        placeholder={sent ? "You're on the list — see you soon." : "you@yourfirm.com"}
+        aria-label="Email address"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
-        aria-label="Email address"
+        disabled={sent}
       />
-      <span className="kbd-hint">↵ to send</span>
-      <button type="submit" disabled={loading}>
-        {sent ? (
-          <>On the list <CheckSmSvg /></>
-        ) : loading ? (
-          "Joining…"
-        ) : (
-          <>Join the Waitlist <span className="arr">→</span></>
-        )}
+      <button className="rl-btn" type="submit" disabled={loading || sent}>
+        {sent ? "On the list" : loading ? "Joining…" : <>Join <span className="arr">→</span></>}
       </button>
     </form>
   );
 }
 
-/* ─── Main Page ─── */
+/* ─── Book / feature row ─── */
+function Book({
+  accent, num, book, tag, title, titleEm, lead, items, panel, panelFirst, divider,
+}: {
+  accent: string;
+  num: string;
+  book: string;
+  tag: string;
+  title: React.ReactNode;
+  titleEm: string;
+  lead: string;
+  items: [string, React.ReactNode][];
+  panel: React.ReactNode;
+  panelFirst?: boolean;
+  divider?: boolean;
+}) {
+  const text = (
+    <div className="reveal" key="text">
+      <div className="rl-book-head">
+        <div className="rl-book-num">{num}</div>
+        <div className="rl-book-meta">
+          <div className="bk">{book}</div>
+          <div className="tg">{tag}</div>
+        </div>
+      </div>
+      <h2 className="rl-h2">
+        {title} <em>{titleEm}</em>
+      </h2>
+      <p className="rl-lead">{lead}</p>
+      <ul className="rl-list">
+        {items.map(([n, body], i) => (
+          <li key={i}>
+            <span className="mk">{n}</span>
+            <span>{body}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+  const media = (
+    <div className="reveal" key="media">
+      {panel}
+    </div>
+  );
+  return (
+    <div className={`rl-feature${divider ? " div" : ""}`} style={ac(accent)}>
+      <div className="rl-wrap">
+        <div className="rl-feature-grid">{panelFirst ? [media, text] : [text, media]}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════ Page ═══════════════════════════════ */
 export default function Home() {
-  useHeroAnim();
   useScrollReveal();
-  const uptime = useLiveStatus();
 
   return (
-    <>
-      {/* ── NAV ── */}
-      <nav className="nav">
-        <div className="nav-inner">
-          <Brand />
-          <div className="nav-links">
-            <a href="#features"><span className="num">i.</span>Practice</a>
-            <a href="#privacy"><span className="num">ii.</span>Doctrine</a>
-            <a href="#pricing"><span className="num">iii.</span>Retainer</a>
-            <a href="#waitlist"><span className="num">iv.</span>Access</a>
-          </div>
-          <div className="nav-right">
-            <a href="#waitlist" className="nav-cta">
-              Join the Waitlist <span className="arrow">→</span>
-            </a>
-          </div>
-        </div>
-      </nav>
-
+    <div className="rl">
       {/* ── HERO ── */}
-      <section className="hero" id="top">
-        <div className="wrap hero-inner">
-          <div className="lockup">
-            <div className="kicker">
-              <span className="dot" />
-              Now in early access · Web, macOS &amp; Windows
-            </div>
+      <header className="rl-hero" id="top">
+        <div className="rl-hero-img" aria-hidden="true" />
+        <div className="rl-hero-scrim" aria-hidden="true" />
 
-            <h1 className="display h1">
-              Counsel<br />
-              that <em>never</em> leaves<br />
-              your machine.
-              <span className="smalls">A local-first AI &nbsp;§&nbsp; for the practice of law</span>
+        <nav className="rl-nav">
+          <a href="#top" className="rl-brand"><img src="/relay-logos/white_relay.svg" alt="Relay" style={{ height: 26, width: "auto", display: "block" }} /></a>
+          <div className="rl-nav-links">
+            <a href="#features"><span className="rl-num" style={{ color: "var(--coral)" }}>i.</span>Practice</a>
+            <a href="#privacy"><span className="rl-num" style={{ color: "#7fa8d4" }}>ii.</span>Doctrine</a>
+            <a href="#pricing"><span className="rl-num" style={{ color: "#86b598" }}>iii.</span>Retainer</a>
+            <a href="#waitlist"><span className="rl-num" style={{ color: "#c79bc3" }}>iv.</span>Access</a>
+          </div>
+          <a href="#waitlist" className="rl-nav-cta">Join the Waitlist</a>
+        </nav>
+
+        <div className="rl-hero-inner">
+          <div className="rl-wrap">
+            <h1 className="rl-h1 reveal">
+              Counsel that <em>never</em>
+              <br />leaves your machine.
             </h1>
-
-            <p className="lede">
-              Relay runs entirely on your hardware. Upload anything. Track everything.
-              Share nothing. Built for attorneys who truly care about their client&apos;s privacy.
-            </p>
-
-            <div className="hero-ctas">
-              <a href="#waitlist" className="btn-primary">
-                Join the Waitlist
-                <span className="arr">→</span>
-              </a>
+            <div className="rl-sub reveal">
+              <span className="bar" />A local-first AI for the practice of law
             </div>
-
-            <div className="platforms" aria-label="Available on Web, macOS, and Windows">
-              <span className="lbl">Available on</span>
-              <span className="plat"><WebSvg />Web</span>
-              <span className="plat"><MacSvg />macOS</span>
-              <span className="plat"><WindowsSvg />Windows</span>
+            <p className="rl-hero-p reveal">
+              Drafting, billing, and the routine work in between — handled by an assistant that
+              runs entirely on the computer in your office. Privileged work that never touches a
+              server, a cloud, or anyone else&apos;s hands.
+            </p>
+            <div className="rl-hero-actions reveal">
+              <a href="#waitlist" className="rl-btn">Join the waitlist <span className="arr">→</span></a>
+              <a href="#privacy" className="rl-btn-ghost">Read the doctrine</a>
             </div>
           </div>
         </div>
+      </header>
 
-        <div className="showcase">
-          {/* floating sub-cards */}
-          <div className="float float-cite" aria-hidden="true">
-            <div className="float-head"><span>Citation</span><span className="badge">Check Passed</span></div>
-            <div className="float-body">
-              <p className="cite-name">City of Paris v. Abbott,<br />360 S.W.3d 567, 580–81</p>
-              <span className="cite-check">
-                <CheckSmSvg />
-                Verified locally
-              </span>
-            </div>
-          </div>
-
-          <div className="float float-billing" aria-hidden="true">
-            <div className="fb-head"><span>Today&apos;s tracking</span><span className="live-dot">● LIVE</span></div>
-            <div className="fb-rows">
-              <div className="fb-row"><span className="matter">Thorngate v. Meridian</span><span className="hrs">2.4h</span><span className="amt">$840</span></div>
-              <div className="fb-row"><span className="matter">Rivera Estate</span><span className="hrs">1.1h</span><span className="amt">$385</span></div>
-              <div className="fb-row"><span className="matter">Jones Patent</span><span className="hrs">0.6h</span><span className="amt">$210</span></div>
-            </div>
-          </div>
-
-          <div className="float-status" aria-hidden="true">
-            <span className="ok-dot" />
-            0 KB sent · uptime {uptime} · local model
-          </div>
-
-          <div className="showcase-main">
-            <div className="showcase-bar">
-              <div className="lights"><span /><span /><span /></div>
-              <div className="showcase-title">relay · Thorngate v. Meridian</div>
-              <div style={{ width: 50 }} />
-            </div>
-            <div className="showcase-screen">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/showcase/showcase-main.png" alt="Relay matter workspace for Thorngate v. Meridian, with a sidebar of matters, recent chats, knowledge base, and document library." />
-            </div>
-          </div>
+      {/* ── PREMISE ── */}
+      <section className="rl-premise">
+        <div className="rl-wrap reveal">
+          <div className="rl-kicker" />
+          <div className="rl-eyebrow" style={{ marginBottom: 28, display: "block" }}>§ 001 &nbsp;·&nbsp; Premise</div>
+          <p className="rl-premise-quote">
+            Your most privileged work, on the one machine you <em>control.</em>
+          </p>
+          <p className="rl-premise-body">
+            Relay was built for lawyers who treat confidentiality as a duty, not a default setting.
+            Every brief it checks, every file it reads, every hour it records — it does on hardware
+            you own, behind your own door.
+          </p>
         </div>
       </section>
 
-      {/* ── MARQUEE STRIP ── */}
-      <div className="strip" aria-hidden="true">
-        <div className="strip-inner">
+      {/* ── TICKER ── */}
+      <div className="rl-ticker" aria-hidden="true">
+        <div className="rl-ticker-row">
           {[0, 1].map((dup) => (
             <span key={dup} style={{ display: "inline-flex", alignItems: "center" }}>
-              <span className="item serif">Local-first.</span><span className="dot">❦</span>
-              <span className="item mono">Bar-compliant by default</span><span className="dot">·</span>
-              <span className="item serif">No cloud, ever.</span><span className="dot">❦</span>
-              <span className="item mono">Privileged by design</span><span className="dot">·</span>
-              <span className="item serif">Runs on your hardware.</span><span className="dot">❦</span>
-              <span className="item mono">Built for civil litigation</span><span className="dot">·</span>
-              <span className="item serif">Discovery-safe.</span><span className="dot">❦</span>
-              <span className="item mono">Air-gapped capable</span><span className="dot">·</span>
+              <span className="t">Local-first.</span><span className="d" style={{ color: "var(--coral)" }}>·</span>
+              <span className="t">No cloud, ever.</span><span className="d" style={{ color: "var(--blue)" }}>·</span>
+              <span className="t">Privileged by design.</span><span className="d" style={{ color: "var(--green)" }}>·</span>
+              <span className="t">Runs on your hardware.</span><span className="d" style={{ color: "var(--plum)" }}>·</span>
+              <span className="t">Discovery-safe.</span><span className="d" style={{ color: "var(--gold)" }}>·</span>
+              <span className="t">Air-gapped capable.</span><span className="d" style={{ color: "var(--coral)" }}>·</span>
             </span>
           ))}
         </div>
       </div>
 
       {/* ── FEATURES ── */}
-      <section className="features" id="features">
-        <div className="wrap">
-          <div className="orn reveal" style={{ marginBottom: 96 }}>
-            <span className="glyph">§</span>
-            <span className="mono">The Practice</span>
-            <span className="glyph">§</span>
-          </div>
+      <section id="features">
+        {/* Book I — Filings (coral) */}
+        <Book
+          accent="var(--coral)"
+          num="I."
+          book="Book I · Of Filings"
+          tag="Smart filing"
+          title="File with"
+          titleEm="confidence."
+          lead="Check every citation, build tables of contents and authorities in seconds, and weigh the strength of an argument before opposing counsel does — all without leaving your draft."
+          items={[
+            ["i.", <><b>Citation verification</b> flags subsequent history against the offline reporter snapshot bundled with Relay.</>],
+            ["ii.", <><b>One-click tables</b> of authorities and contents, in your firm&apos;s house style. Exports to Word with formatting intact.</>],
+            ["iii.", <><b>Argument review</b> gives an even-handed read on which points carry weight — computed entirely on your machine.</>],
+          ]}
+          panel={
+            <div className="rl-panel">
+              <div className="rl-panel-margin" aria-hidden="true" />
+              <div className="rl-panel-head">
+                <span className="rl-panel-tag"><span className="dot" />Citation check</span>
+                <span className="rl-panel-sub">Thorngate v. Meridian</span>
+              </div>
+              <div className="rl-panel-body">
+                <div style={{ fontFamily: "var(--serif)", fontStyle: "italic", fontSize: 16, color: "var(--ink)", ...ruled }}>Brief in Support — Table of Authorities</div>
+                <div style={lineMuted}>1.&nbsp;&nbsp;Calloway v. State, 210 Ill. 2d 44</div>
+                <div style={rowBetween}>
+                  <span style={{ ...serifLine, fontSize: "14.5px" }}>2.&nbsp;&nbsp;Meridian Capital v. Thorngate, 412 F.3d 88</span>
+                  <span className="rl-badge">Superseded</span>
+                </div>
+                <div style={lineMuted}>3.&nbsp;&nbsp;In re Wexler Trust, 88 Cal. App. 4th 12</div>
+                <div style={statusLine}><span style={greenDot} />98 of 99 authorities verified — 1 needs attention</div>
+              </div>
+            </div>
+          }
+        />
 
-          {/* BOOK I — Filing Confidence */}
-          <div className="feature-row reveal">
-            <div className="feature-copy">
-              <div className="feature-meta">
-                <span className="roman">I.</span>
-                <div className="meta-text">
-                  <div className="book">Book I &nbsp;·&nbsp; Of Filings</div>
-                  <div className="tag">Smart filing</div>
+        {/* Book II — Automations (blue) · panel first */}
+        <Book
+          accent="var(--blue)"
+          divider
+          panelFirst
+          num="II."
+          book="Book II · Of Routine"
+          tag="Automations"
+          title="Work that runs"
+          titleEm="itself."
+          lead="Set a rule once and let it hold the line. When a client's email lands, Relay can draft the reply, pull the right document, and queue it for your sign-off — or send it on its own. The routine handles itself; the judgment stays yours."
+          items={[
+            ["i.", <><b>Trigger rules</b> — incoming mail, new filings, and calendar dates set a workflow in motion.</>],
+            ["ii.", <><b>Local execution</b> — every automation fires on your own machine. Nothing about the matter leaves to run a rule.</>],
+            ["iii.", <><b>You set the leash</b> — auto-send the routine, hold the sensitive for review. Each step is yours to gate.</>],
+          ]}
+          panel={
+            <div className="rl-panel">
+              <div className="rl-panel-margin" aria-hidden="true" />
+              <div className="rl-panel-head">
+                <span className="rl-panel-tag"><span className="dot" />Automation</span>
+                <span className="rl-panel-sub">Client intake</span>
+              </div>
+              <div className="rl-panel-body">
+                <div style={labelMini}>When</div>
+                <div style={{ fontFamily: "var(--serif)", fontStyle: "italic", fontSize: 16, color: "var(--ink)", ...ruled }}>an email arrives from a client on an open matter</div>
+                <div style={{ ...labelMini, marginTop: 4 }}>Then</div>
+                <div style={lineInk}>1.&nbsp;&nbsp;Draft a reply in your voice</div>
+                <div style={lineInk}>2.&nbsp;&nbsp;Attach the latest filing from the matter</div>
+                <div style={rowBetween}>
+                  <span style={{ fontSize: "14.5px", color: "var(--ink)" }}>3.&nbsp;&nbsp;Hold for your sign-off</span>
+                  <span className="rl-badge">Review</span>
+                </div>
+                <div style={statusLine}><span style={greenDot} />Runs on your machine — 14 automations active</div>
+              </div>
+            </div>
+          }
+        />
+
+        {/* Book III — Billing (green) */}
+        <Book
+          accent="var(--green)"
+          divider
+          num="III."
+          book="Book III · Of Hours"
+          tag="Billing"
+          title="Recover the hours"
+          titleEm="you lost."
+          lead="Relay follows your work across matters — quietly and locally — and drafts accurate time entries in the background. Review them on your schedule and bill with a clear conscience."
+          items={[
+            ["i.", <><b>Activity capture</b> matches documents, windows, and correspondence to the right matter.</>],
+            ["ii.", <><b>Review before export</b> — every entry is yours to confirm, edit, or set aside.</>],
+            ["iii.", <><b>Clean handoff</b> to Clio, PracticePanther, or a tidy spreadsheet.</>],
+          ]}
+          panel={
+            <div className="rl-panel">
+              <div className="rl-panel-margin" aria-hidden="true" />
+              <div className="rl-panel-head">
+                <span className="rl-panel-tag"><span className="dot" />Time entries</span>
+                <span className="rl-panel-sub">This week</span>
+              </div>
+              <div className="rl-panel-body">
+                {[
+                  ["Calloway — review production", "1.4 h"],
+                  ["Thorngate — draft reply brief", "2.1 h"],
+                  ["Wexler — client correspondence", "0.6 h"],
+                ].map(([matter, hrs]) => (
+                  <div key={matter} style={rowBetween}>
+                    <span style={serifLine}>{matter}</span>
+                    <span style={{ fontFamily: "var(--sans)", fontSize: 13, color: "var(--ink-65)" }}>{hrs}</span>
+                  </div>
+                ))}
+                <div style={{ ...rowBetween, marginTop: 8, borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+                  <span style={{ fontFamily: "var(--sans)", fontSize: 11, fontWeight: 500, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink-45)" }}>Ready to bill</span>
+                  <span style={{ fontFamily: "var(--serif)", fontStyle: "italic", fontSize: 26, color: "var(--green)" }}>4.1 h</span>
                 </div>
               </div>
-              <h2 className="display h2">File with <em>confidence.</em></h2>
-              <p className="lede">Check every citation. Generate tables of contents and authorities in seconds. Evaluate argument strength before opposing counsel does, all without leaving your draft.</p>
-              <ul className="feature-bullets">
-                <li><span className="marker">¶ 1</span><span><b>Citation verification</b> flags shepardized changes against the offline reporter snapshot bundled with Relay.</span></li>
-                <li><span className="marker">¶ 2</span><span><b>One-click TOA &amp; TOC</b>, extracted in your firm&apos;s house style. Export to .docx with formatting intact.</span></li>
-                <li><span className="marker">¶ 3</span><span><b>Argument strength scoring</b> gives an objective read on which arguments carry weight, computed locally.</span></li>
-              </ul>
             </div>
-            <div className="feature-art">
-              <div className="stamp" aria-hidden="true"><div className="inner">Relay<b>§ I</b>Filings</div></div>
-              <div className="feature-art-bar">
-                <div className="lights"><span /><span /><span /></div>
-                <span className="label">citation check · Thorngate v. Meridian</span>
-              </div>
-              <div className="feature-art-screen" style={{ background: "#fff" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/showcase/citation.png" alt="Citation check panel showing case citation City of Paris v. Abbott alongside brief excerpt." style={{ top: 0, left: 0, width: "100%" }} />
-              </div>
-            </div>
-          </div>
+          }
+        />
+      </section>
 
-          {/* BOOK II — Document Analysis */}
-          <div className="feature-row flip reveal">
-            <div className="feature-copy">
-              <div className="feature-meta">
-                <span className="roman">II.</span>
-                <div className="meta-text">
-                  <div className="book">Book II &nbsp;·&nbsp; Of Matters</div>
-                  <div className="tag">Document analysis</div>
-                </div>
-              </div>
-              <h2 className="display h2">A matter that <em>thinks</em> with you.</h2>
-              <p className="lede">Drop in a complaint, a deposition, a 4,000-page production. Relay reads it where it sits, on your own disk, and surfaces what changes the case.</p>
-              <ul className="feature-bullets">
-                <li><span className="marker">¶ 1</span><span><b>Deposition inconsistency detection</b> surfaces conflicts with documented timelines.</span></li>
-                <li><span className="marker">¶ 2</span><span><b>Visualizations on demand</b> generate timelines, party diagrams, and demonstratives from extracted facts.</span></li>
-                <li><span className="marker">¶ 3</span><span><b>Matter-level memory</b> means Relay remembers parties, deadlines, and strategy across every chat.</span></li>
-              </ul>
-            </div>
-            <div className="feature-art">
-              <div className="stamp gold" aria-hidden="true"><div className="inner">Relay<b>§ II</b>Matters</div></div>
-              <div className="feature-art-bar">
-                <div className="lights"><span /><span /><span /></div>
-                <span className="label">matter workspace · ask anything</span>
-              </div>
-              <div className="feature-art-screen" style={{ background: "#f3efe4" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/showcase/matter.png" alt="Relay 'Ask me anything about your matter' prompt with first-upload suggestions and reminders." style={{ top: "5%", left: "4%", width: "92%" }} />
-              </div>
-            </div>
+      {/* ── PRACTICE FIT ── */}
+      <section className="rl-practice" id="practice">
+        <div className="rl-wrap">
+          <div className="rl-practice-head reveal">
+            <div className="rl-kicker" />
+            <span className="rl-eyebrow">§ &nbsp; Of Practice</span>
+            <h2 className="rl-practice-h2">Built for how lawyers <em>actually work.</em></h2>
+            <p className="rl-practice-intro">
+              However your practice is shaped, the rule holds: the work stays in your office.
+              A few of the people Relay was built for.
+            </p>
           </div>
-
-          {/* BOOK III — Billing */}
-          <div className="feature-row reveal">
-            <div className="feature-copy">
-              <div className="feature-meta">
-                <span className="roman">III.</span>
-                <div className="meta-text">
-                  <div className="book">Book III &nbsp;·&nbsp; Of Hours</div>
-                  <div className="tag">Billing</div>
-                </div>
+          <div className="rl-rows">
+            {[
+              ["var(--coral)", "I.", "Litigators", "Build and check tables of authorities — and catch a bad citation before it ever reaches the court."],
+              ["var(--blue)", "II.", "Solo & small firms", "Automate the back-office busywork that usually has no one left to delegate it to."],
+              ["var(--green)", "III.", "Billing-conscious practices", "Stop losing revenue to untracked time, with capture that runs quietly in the background."],
+              ["var(--plum)", "IV.", "High-volume inboxes", "Set an automation once, and routine mail gets handled the moment it arrives."],
+              ["var(--gold)", "V.", "Confidentiality on the line", "Get all of the above — without a single file ever leaving your office."],
+            ].map(([color, num, label, quote], i, list) => (
+              <div key={num} className={`rl-row reveal${i === list.length - 1 ? " last" : ""}`} style={ac(color)}>
+                <div className="rl-row-num">{num}<small>{label}</small></div>
+                <p className="rl-row-q">{quote}</p>
               </div>
-              <h2 className="display h2">Passive billing that <em>finds the hours</em> you lost.</h2>
-              <p className="lede">Relay watches your work across matters, quietly and locally, and builds accurate time entries in the background. Review weekly. Bill on your schedule.</p>
-              <ul className="feature-bullets">
-                <li><span className="marker">¶ 1</span><span><b>Activity capture</b> matches windows, files, and email subjects to matters automatically.</span></li>
-                <li><span className="marker">¶ 2</span><span><b>Confidence flags</b> surface low-confidence entries for your review before export.</span></li>
-                <li><span className="marker">¶ 3</span><span><b>Export-ready entries</b> push to Clio, PracticePanther, or a clean CSV.</span></li>
-              </ul>
-            </div>
-            <div className="feature-art">
-              <div className="stamp gold" aria-hidden="true"><div className="inner">Relay<b>§ III</b>Billing</div></div>
-              <div className="feature-art-bar">
-                <div className="lights"><span /><span /><span /></div>
-                <span className="label">billing · review &amp; approve</span>
-              </div>
-              <div className="feature-art-screen" style={{ background: "#f3efe4" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/showcase/billing.png" alt="Billing review screen showing tracked time entries grouped by matter with hours, rate, and amount." style={{ top: "-4%", left: 0, width: "100%" }} />
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ── PRIVACY DOCTRINE ── */}
-      <section className="privacy" id="privacy">
-        <div className="privacy-inner">
-          <div className="wrap privacy-head reveal">
-            <span className="mono">The Privacy Doctrine</span>
-            <h2 className="display h2">
-              We never see <em>anything.</em>
+      <section className="rl-privacy" id="privacy">
+        <div className="rl-wrap">
+          <div className="rl-privacy-head reveal">
+            <div className="rl-kicker" />
+            <span className="rl-eyebrow">§ &nbsp; The Privacy Doctrine</span>
+            <h2 className="rl-privacy-h2">
+              <em>We never see anything.</em>
               <br />
-              <span style={{ opacity: 0.45 }}>By design, not by policy.</span>
+              <span className="mut">By design, not by policy.</span>
             </h2>
-            <p>Every guarantee below is enforced at the <em>architecture</em> layer, not the contract layer. Pull the network cable and Relay still works.</p>
           </div>
-
-          <div className="doctrine reveal" style={{ ["--delay" as string]: "100ms" }}>
-            <div className="article">
-              <div className="num">I.<small>Inference</small></div>
-              <div className="copy">
-                <h4>Inference is <em>local.</em></h4>
-                <p>Every AI inference runs on the computer in your office. No prompt, no document, no thought leaves the machine. <strong>Verify with your own packet capture.</strong></p>
+          <div className="rl-doctrine">
+            {[
+              ["var(--coral)", "I.", "Building", <>Your data stays in your <em>building.</em></>, <>Nothing about a client matter is ever sent to an outside AI provider. Every inference runs on the computer in your office. <strong>You can confirm it yourself.</strong></>],
+              ["var(--blue)", "II.", "Privilege", <>Confidentiality you can <em>defend.</em></>, <>The architecture maps cleanly to ABA Model Rule 1.6 and its state analogues. If a client asks where their information goes, the answer is simple: <strong>nowhere.</strong></>],
+              ["var(--green)", "III.", "Training", <>No training on your <em>files.</em></>, <>Your work product is never used to train, tune, or evaluate anyone&apos;s model. <strong>Any diagnostics are opt-in, anonymous, and limited to crash reports.</strong></>],
+              ["var(--plum)", "IV.", "Control", <>You hold the <em>keys.</em></>, <>Access lives with your firm, not a vendor&apos;s servers. There is no private mode to remember to switch on — <strong>the privacy is simply the product.</strong></>],
+            ].map(([color, num, tag, head, body], i, list) => (
+              <div key={i} className={`rl-drow reveal${i === list.length - 1 ? " last" : ""}`} style={ac(color as string)}>
+                <div className="rl-dnum">{num}<small>{tag}</small></div>
+                <div>
+                  <h4 className="rl-dhead">{head}</h4>
+                  <p className="rl-dbody">{body}</p>
+                </div>
               </div>
-            </div>
-            <div className="article">
-              <div className="num">II.<small>Storage</small></div>
-              <div className="copy">
-                <h4>Storage is <em>local.</em></h4>
-                <p>Briefs, contracts, depositions, and the matter knowledge base live in an encrypted vault on your disk. <strong>We don&apos;t have credentials, and we couldn&apos;t decrypt them if subpoenaed.</strong></p>
-              </div>
-            </div>
-            <div className="article">
-              <div className="num">III.<small>Training</small></div>
-              <div className="copy">
-                <h4>Training is <em>not</em> on your data.</h4>
-                <p>Your work product is never used to train, fine-tune, or evaluate any model, whether ours or anyone else&apos;s. <strong>Telemetry is opt-in, anonymous, and limited to crash reports.</strong></p>
-              </div>
-            </div>
-            <div className="article">
-              <div className="num">IV.<small>Compliance</small></div>
-              <div className="copy">
-                <h4>Compliance is the <em>default</em> state.</h4>
-                <p>Relay&apos;s architecture maps cleanly to ABA Model Rule 1.6 and the analogous state rules. <strong>No additional configuration, no enterprise plan, no &ldquo;private mode&rdquo; toggle to forget.</strong></p>
-              </div>
-            </div>
-
-            <div className="affidavit reveal" style={{ ["--delay" as string]: "200ms" }}>
-              <span className="sig">Enforced in code, not in a contract.</span>
-            </div>
+            ))}
           </div>
+          <div className="rl-seal reveal">Enforced in code, not in a contract.</div>
         </div>
       </section>
 
-      {/* ── PRICING / RETAINER ── */}
-      <section className="pricing" id="pricing">
-        <div className="wrap">
-          <div className="pricing-head reveal">
-            <span className="mono coral">The Retainer</span>
-            <h2 className="display h2">One price. <em>No usage games.</em></h2>
-            <p>No per-query charges. No contacting sales. Unlimited everything, forever at an affordable price.</p>
+      {/* ── PRICING ── */}
+      <section className="rl-pricing" id="pricing">
+        <div className="rl-wrap">
+          <div className="rl-pricing-head reveal" style={ac("var(--gold)")}>
+            <div className="rl-kicker center" />
+            <span className="rl-eyebrow">§ &nbsp; The Retainer</span>
+            <h2 className="rl-price-h2">One price. <em>No usage games.</em></h2>
           </div>
 
-          <div className="retainer reveal" style={{ ["--delay" as string]: "100ms" }}>
-            <div className="retainer-head">
-              <div className="doc-no">Early adopter pricing <b>№ 2026-EA-001</b></div>
-              <div className="seal-mini">Limited time</div>
+          <div className="rl-price-figure reveal">
+            <div className="rl-price-amounts">
+              <span className="rl-price-was">$149</span>
+              <span className="rl-price-now">$50</span>
             </div>
-            <div className="retainer-grid">
-              <div className="retainer-left">
-                <h3>Simple <em>pricing.</em></h3>
-                <div className="sub">Per user &nbsp;·&nbsp; billed monthly</div>
+            <div className="rl-price-unit">per user · per month</div>
+          </div>
 
-                <div className="price-rows">
-                  <div>
-                    <div className="label">Early adopter</div>
-                    <div className="amount"><em>$50</em><span className="per">/mo</span></div>
-                    <div className="unit">per user · $0 setup</div>
-                  </div>
-                  <div>
-                    <div className="label strike">Standard</div>
-                    <div className="amount muted"><span className="crossit">$200</span><span className="per">/mo</span></div>
-                    <div className="unit">per user · $2,000 setup</div>
-                  </div>
-                </div>
+          <ul className="rl-price-list reveal">
+            {[
+              ["var(--coral)", "a.", <><em>Document</em> editing — tables, citations &amp; drafting</>],
+              ["var(--blue)", "b.", <><em>Automations</em> that run on their own</>],
+              ["var(--green)", "c.", <><em>Automatic</em> billing capture &amp; export</>],
+              ["var(--plum)", "d.", <><em>No</em> per-query metering, ever</>],
+              ["var(--gold)", "e.", <><em>Runs</em> on your firm&apos;s own hardware</>],
+              ["var(--coral)", "f.", <><em>Future</em> features at the same fair price</>],
+            ].map(([color, ix, body], i) => (
+              <li key={i}>
+                <span className="ix" style={{ color: color as string }}>{ix}</span>
+                <span>{body}</span>
+              </li>
+            ))}
+          </ul>
 
-                <div className="terms">
-                  <p>Lock in early adopter pricing today. <em>Held for the life of your subscription</em>. No annual price hikes, no surprise tiering.</p>
-                </div>
-              </div>
-
-              <div className="retainer-right">
-                <div className="feat-list-label">What&apos;s included</div>
-                <ul className="feat-list">
-                  <li><span className="num">a.</span><span><em>Tables</em> of contents &amp; authorities, generated</span></li>
-                  <li><span className="num">b.</span><span><em>Unlimited</em> case queries</span></li>
-                  <li><span className="num">c.</span><span><em>Automatic</em> time tracking &amp; billing export</span></li>
-                  <li><span className="num">d.</span><span><em>Unlimited</em> document uploads</span></li>
-                  <li><span className="num">e.</span><span><em>Matter-level</em> workspaces</span></li>
-                  <li><span className="num">f.</span><span><em>Future</em> features at competitive pricing</span></li>
-                </ul>
-                <a href="/billing" className="btn-primary" style={{ width: "100%", justifyContent: "center" }}>
-                  Get started
-                  <span className="arr">→</span>
-                </a>
-                <a href="#waitlist" className="retainer-secondary">or join the waitlist</a>
-              </div>
-            </div>
+          <div className="rl-price-cta reveal">
+            <a href="/billing" className="rl-btn">Get started <span className="arr">→</span></a>
+            <a href="#waitlist" className="rl-price-alt">or join the waitlist</a>
           </div>
         </div>
       </section>
 
       {/* ── FINAL CTA ── */}
-      <section className="cta" id="waitlist">
-        <div className="wrap cta-inner">
-          <div className="orn reveal" style={{ marginBottom: 28 }}>
-            <span className="mono coral">Early Access</span>
+      <section className="rl-final" id="waitlist">
+        <div className="rl-final-img" aria-hidden="true" />
+        <div className="rl-final-scrim" aria-hidden="true" />
+        <div className="rl-final-inner">
+          <div className="rl-wrap">
+            <div className="rl-kicker reveal" />
+            <span className="rl-eyebrow reveal">§ &nbsp; Early Access</span>
+            <h2 className="reveal">Be <em>first</em> in line.</h2>
+            <WaitlistForm />
           </div>
-          <h2 className="display h2 reveal" style={{ ["--delay" as string]: "60ms" }}>Be <em>first</em> in line.</h2>
-          <p className="lede reveal" style={{ ["--delay" as string]: "120ms" }}>
-            Rolling out to a small group of attorneys and support staff.
-            Join the waitlist and lock in <em>early access</em> pricing.
-          </p>
-          <WaitlistForm />
         </div>
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="footer">
-        <div className="wrap">
-          <div className="footer-top">
-            <div>
-              <Brand />
-              <p className="footer-tagline">The AI counsel that runs entirely on your machine.</p>
+      <footer className="rl-footer">
+        <div className="rl-wrap">
+          <div className="rl-foot-cols">
+            <div className="rl-foot-lead">
+              <a href="#top" className="rl-brand"><img src="/relay-logos/black_relay.svg" alt="Relay" style={{ height: 26, width: "auto", display: "block" }} /></a>
+              <p>The AI counsel that runs entirely on your machine.</p>
             </div>
-            <div>
+            <div className="rl-foot-col" style={ac("var(--coral)")}>
               <h5>Practice</h5>
-              <ul>
-                <li><a href="#features">Filings</a></li>
-                <li><a href="#features">Matters</a></li>
-                <li><a href="#features">Research</a></li>
-                <li><a href="#features">Billing</a></li>
-              </ul>
+              <a href="#features">Filings</a>
+              <a href="#features">Automations</a>
+              <a href="#features">Billing</a>
             </div>
-            <div>
+            <div className="rl-foot-col" style={ac("var(--blue)")}>
               <h5>Company</h5>
-              <ul>
-                <li><a href="#">About</a></li>
-                <li><a href="mailto:support@relay-law.com">Contact</a></li>
-                <li><a href="#">Security</a></li>
-                <li><a href="#privacy">Doctrine</a></li>
-              </ul>
+              <a href="#practice">Practice fit</a>
+              <a href="#privacy">The Doctrine</a>
+              <a href="#pricing">Retainer</a>
+              <a href="mailto:support@relay-law.com">Contact</a>
             </div>
-            <div>
-              <h5>Resources</h5>
-              <ul>
-                <li><a href="#">Documentation</a></li>
-                <li><a href="#">System requirements</a></li>
-                <li><a href="#">Privacy whitepaper</a></li>
-                <li><a href="#pricing">Retainer</a></li>
-              </ul>
+            <div className="rl-foot-col" style={ac("var(--green)")}>
+              <h5>Get started</h5>
+              <a href="#waitlist">Early access</a>
+              <a href="#waitlist">Join the waitlist</a>
             </div>
           </div>
 
-          <div className="colophon">
-            {/* <div className="megabrand" aria-hidden="true">Relay.</div> */}
-            <div className="colophon-bar">
-              <span>© 2026 · Relay Legal Technologies, Inc.</span>
-            </div>
+          <div className="rl-footbase">
+            <span>© 2026 · Relay Legal Technologies, Inc.</span>
+            <span>Local-first · Bar-compliant by default</span>
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }

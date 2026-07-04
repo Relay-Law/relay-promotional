@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Relay — prototype (Sinter-style)</title>
+
+<!-- Fonts: Fraunces (display serif w/ italics), Inter Tight (body), JetBrains Mono (labels) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Inter+Tight:ital,wght@0,300..600;1,400..500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --bone:      #f5f2ec;   /* page base */
+    --bone-2:    #efebe1;   /* slightly deeper panels */
+    --ink:       #1b140d;   /* primary text */
+    --ink-deep:  #0c0a07;   /* dark section */
+    --ink-65:    rgba(27,20,13,.66);
+    --ink-45:    rgba(27,20,13,.45);
+    --ink-30:    rgba(27,20,13,.30);
+    --line:      rgba(27,20,13,.14);
+    --line-soft: rgba(27,20,13,.08);
+    --coral:     #d9743f;   /* rare accent */
+    --cream:     #f3ecdc;
+    --cream-45:  rgba(243,236,220,.55);
+    --cream-30:  rgba(243,236,220,.30);
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans:  "Inter Tight", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono:  "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+  body{
+    margin:0; background:var(--bone); color:var(--ink);
+    font-family:var(--sans); font-weight:400; font-size:16px; line-height:1.6;
+    letter-spacing:-.006em; overflow-x:hidden;
+  }
+  img{ max-width:100%; display:block; }
+  a{ color:inherit; text-decoration:none; }
+  ::selection{ background:var(--coral); color:#fff; }
+
+  /* ── shared utilities ── */
+  .wrap{ max-width:1240px; margin:0 auto; padding:0 28px; }
+  @media(min-width:760px){ .wrap{ padding:0 56px; } }
+
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; font-weight:500;
+    letter-spacing:.22em; text-transform:uppercase; color:var(--ink-45);
+  }
+  .eyebrow .dot{ color:var(--coral); }
+
+  .display{
+    font-family:var(--serif); font-weight:340; color:var(--ink);
+    margin:0; line-height:.92; letter-spacing:-.025em;
+  }
+  .display em{ font-style:italic; font-weight:340; }
+  .display .ac{ color:var(--coral); font-style:italic; }
+
+  .lede{
+    font-family:var(--sans); font-size:18px; line-height:1.62;
+    color:var(--ink-65); max-width:52ch; font-weight:400;
+  }
+  .lede em{ font-style:italic; font-family:var(--serif); color:var(--ink); font-size:1.06em; }
+
+  .arr{ font-family:var(--serif); font-style:italic; font-weight:400; letter-spacing:0; }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:12px;
+    font-family:var(--mono); font-size:11px; font-weight:500;
+    letter-spacing:.16em; text-transform:uppercase;
+    padding:14px 22px; border-radius:2px; border:1px solid var(--ink);
+    background:var(--ink); color:var(--bone);
+    transition:background-color .2s ease, color .2s ease, transform .2s ease;
+  }
+  .btn:hover{ background:transparent; color:var(--ink); transform:translateY(-1px); }
+  .btn-ghost{ background:transparent; color:var(--ink); border-color:var(--line); }
+  .btn-ghost:hover{ border-color:var(--ink); background:transparent; }
+
+  .rule{ height:1px; background:var(--line); border:0; margin:0; }
+
+  /* fade-in on scroll */
+  .reveal{ opacity:0; transform:translateY(22px); transition:opacity .9s cubic-bezier(.22,1,.36,1), transform .9s cubic-bezier(.22,1,.36,1); }
+  .reveal.in{ opacity:1; transform:none; }
+  @media(prefers-reduced-motion:reduce){ .reveal{ opacity:1; transform:none; } }
+
+  /* ════════ NAV (floats over hero) ════════ */
+  .nav{
+    position:absolute; top:0; left:0; right:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:26px 28px; color:var(--cream);
+  }
+  @media(min-width:760px){ .nav{ padding:30px 56px; } }
+  .brand{ font-family:var(--serif); font-size:23px; font-style:italic; letter-spacing:-.02em; }
+  .nav-links{ display:none; gap:30px; font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
+  .nav-links a{ color:var(--cream-45); transition:color .2s; }
+  .nav-links a:hover{ color:var(--cream); }
+  .nav-links .num{ color:var(--coral); font-family:var(--serif); font-style:italic; text-transform:none; margin-right:7px; }
+  @media(min-width:900px){ .nav-links{ display:flex; } }
+  .nav-cta{
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--cream); border:1px solid var(--cream-30); padding:9px 16px; border-radius:2px;
+    transition:border-color .2s, background-color .2s;
+  }
+  .nav-cta:hover{ border-color:var(--cream); }
+
+  /* ════════ HERO ════════ */
+  .hero{ position:relative; min-height:96vh; display:flex; flex-direction:column; justify-content:flex-end; background:#2a211a; overflow:hidden; }
+  .hero-img{
+    position:absolute; inset:0; z-index:0;
+    background-color:#2a211a;
+    background-image:url('https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=2200&q=80');
+    background-size:cover; background-position:center 38%;
+    filter:saturate(.82) brightness(.92);
+  }
+  /* scrim for legibility */
+  .hero-img::after{
+    content:""; position:absolute; inset:0;
+    background:linear-gradient(180deg, rgba(12,10,7,.30) 0%, rgba(12,10,7,.06) 34%, rgba(12,10,7,.20) 60%, rgba(12,10,7,.74) 100%);
+  }
+  .hero-inner{ position:relative; z-index:2; width:100%; padding-bottom:54px; }
+  @media(min-width:760px){ .hero-inner{ padding-bottom:72px; } }
+  .hero h1{ color:var(--cream); font-size:clamp(46px,9.6vw,150px); max-width:15ch; }
+  .hero .sub{
+    margin-top:22px; display:flex; align-items:center; gap:16px;
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--cream-45);
+  }
+  .hero .sub .bar{ width:42px; height:1px; background:var(--cream-30); }
+
+  /* frosted status chip overlapping hero corner */
+  .chip{
+    position:absolute; right:28px; bottom:120px; z-index:3;
+    display:inline-flex; align-items:center; gap:11px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--cream);
+    background:rgba(20,16,12,.42); border:1px solid var(--cream-30); border-radius:3px;
+    padding:11px 16px; backdrop-filter:blur(8px) saturate(140%); -webkit-backdrop-filter:blur(8px) saturate(140%);
+  }
+  .chip .live{ width:7px; height:7px; border-radius:50%; background:var(--coral); box-shadow:0 0 10px var(--coral); animation:pulse 2.4s infinite; }
+  @media(min-width:760px){ .chip{ right:56px; bottom:150px; } }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+
+  /* scroll/Next cue (Sinter-style) */
+  .next-cue{
+    position:absolute; left:28px; bottom:26px; z-index:3;
+    display:flex; align-items:center; gap:12px;
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--cream-45);
+  }
+  @media(min-width:760px){ .next-cue{ left:56px; } }
+  .next-cue .ln{ width:34px; height:1px; background:var(--cream-30); }
+
+  /* ════════ BREATH BAND ════════ */
+  .breath{ padding:130px 0 120px; }
+  .breath p{
+    font-family:var(--serif); font-weight:340; font-style:italic;
+    font-size:clamp(26px,4.4vw,52px); line-height:1.16; letter-spacing:-.02em;
+    max-width:20ch; margin:0; color:var(--ink);
+  }
+  .breath .pin{ font-family:var(--mono); font-style:normal; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-30); margin-bottom:30px; }
+
+  /* ════════ TICKER ════════ */
+  .ticker{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); overflow:hidden; padding:24px 0; }
+  .ticker-row{ display:flex; gap:0; white-space:nowrap; animation:marquee 42s linear infinite; }
+  .ticker-row span{ font-family:var(--serif); font-style:italic; font-size:24px; color:var(--ink-65); padding:0 30px; letter-spacing:-.01em; }
+  .ticker-row .sep{ color:var(--coral); font-style:normal; }
+  @keyframes marquee{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
+
+  /* ════════ FEATURES (alternating) ════════ */
+  .feature{ padding:104px 0; }
+  .feature-grid{ display:grid; grid-template-columns:1fr; gap:44px; align-items:center; }
+  @media(min-width:920px){ .feature-grid{ grid-template-columns:1fr 1fr; gap:88px; } }
+  .feature-head{ display:flex; align-items:flex-start; gap:18px; margin-bottom:26px; }
+  .feature-num{ font-family:var(--serif); font-style:italic; font-size:64px; line-height:.8; color:var(--coral); }
+  .feature-meta{ border-top:1px solid var(--line); padding-top:12px; }
+  .feature-meta .bk{ font-family:var(--mono); font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--coral); }
+  .feature-meta .tg{ font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-45); margin-top:6px; }
+  .feature h2{ font-family:var(--serif); font-weight:340; font-size:clamp(34px,4.4vw,58px); line-height:.98; letter-spacing:-.025em; margin:0 0 22px; }
+  .feature h2 em{ font-style:italic; color:var(--coral); }
+  .feature .para{ font-size:16.5px; color:var(--ink-65); max-width:46ch; }
+  .feature ul{ list-style:none; margin:34px 0 0; padding:0; border-top:1px solid var(--line); }
+  .feature li{ display:grid; grid-template-columns:34px 1fr; gap:14px; padding:16px 2px; border-bottom:1px solid var(--line); font-size:14.5px; color:var(--ink-65); }
+  .feature li .pp{ font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--coral); padding-top:3px; }
+  .feature li b{ font-family:var(--serif); font-weight:400; font-style:italic; font-size:16px; color:var(--ink); }
+
+  /* feature "image" plate — placeholder browser frame */
+  .plate{ border:1px solid var(--line); border-radius:6px; background:var(--bone-2); overflow:hidden; box-shadow:0 40px 80px -50px rgba(27,20,13,.4); }
+  .plate-bar{ display:flex; align-items:center; gap:8px; padding:11px 14px; border-bottom:1px solid var(--line); }
+  .plate-bar i{ width:9px; height:9px; border-radius:50%; background:var(--ink-30); display:block; }
+  .plate-bar span{ margin-left:8px; font-family:var(--mono); font-size:10.5px; color:var(--ink-45); }
+  .plate-body{ aspect-ratio:4/3; display:flex; align-items:center; justify-content:center; background:
+      linear-gradient(135deg, rgba(217,116,63,.05), transparent 60%),
+      repeating-linear-gradient(0deg, transparent 0 38px, rgba(27,20,13,.05) 38px 39px); }
+  .plate-body .lbl{ font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-30); }
+  .bleed-right .plate{ margin-right:-56px; border-radius:6px 0 0 6px; }
+  @media(max-width:920px){ .bleed-right .plate{ margin-right:0; border-radius:6px; } }
+
+  /* ════════ PRIVACY (dark inverted band) ════════ */
+  .privacy{ background:var(--ink-deep); color:var(--cream); padding:128px 0; position:relative; }
+  .privacy .head{ text-align:left; max-width:760px; margin-bottom:64px; }
+  .privacy .eyebrow{ color:var(--cream-45); }
+  .privacy h2{ font-family:var(--serif); font-weight:330; font-size:clamp(36px,5.4vw,76px); line-height:.98; letter-spacing:-.025em; margin:20px 0 0; }
+  .privacy h2 em{ font-style:italic; color:var(--coral); }
+  .privacy h2 .mut{ color:var(--cream-45); }
+  .doctrine{ max-width:900px; }
+  .doctrine .row{ display:grid; grid-template-columns:1fr; gap:10px; padding:30px 0; border-top:1px solid rgba(243,236,220,.14); }
+  @media(min-width:720px){ .doctrine .row{ grid-template-columns:130px 1fr; gap:40px; } }
+  .doctrine .rn{ font-family:var(--serif); font-style:italic; font-size:52px; line-height:.85; color:var(--coral); }
+  .doctrine .rn small{ display:block; margin-top:10px; font-family:var(--mono); font-style:normal; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--cream-30); }
+  .doctrine h4{ font-family:var(--serif); font-weight:360; font-size:27px; line-height:1.12; letter-spacing:-.015em; margin:0 0 12px; }
+  .doctrine h4 em{ font-style:italic; color:var(--coral); }
+  .doctrine p{ margin:0; max-width:60ch; font-size:15.5px; line-height:1.6; color:var(--cream-45); }
+  .doctrine p strong{ color:var(--cream); font-weight:500; }
+  .doctrine .row:last-child{ border-bottom:1px solid rgba(243,236,220,.14); }
+  .privacy .seal{ text-align:center; margin-top:56px; font-family:var(--serif); font-style:italic; font-size:clamp(26px,3.4vw,40px); color:var(--cream); letter-spacing:-.02em; }
+
+  /* ════════ PRICING (stripped) ════════ */
+  .pricing{ padding:128px 0; }
+  .pricing-top{ max-width:640px; margin-bottom:72px; }
+  .pricing h2{ font-family:var(--serif); font-weight:330; font-size:clamp(34px,5vw,68px); line-height:.98; letter-spacing:-.025em; margin:18px 0 0; }
+  .pricing h2 em{ font-style:italic; color:var(--coral); }
+  .price-grid{ display:grid; grid-template-columns:1fr; gap:56px; align-items:end; }
+  @media(min-width:880px){ .price-grid{ grid-template-columns:1.1fr 1fr; gap:80px; } }
+  .price-figure .docket{ font-family:var(--mono); font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--ink-45); margin-bottom:18px; }
+  .price-figure .big{ font-family:var(--serif); font-weight:330; font-size:clamp(96px,14vw,184px); line-height:.82; letter-spacing:-.04em; color:var(--ink); }
+  .price-figure .big em{ font-style:italic; color:var(--coral); }
+  .price-figure .unit{ font-family:var(--mono); font-size:13px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-45); margin-top:14px; }
+  .price-figure .was{ color:var(--ink-30); text-decoration:line-through; margin-left:14px; }
+  .price-list{ list-style:none; margin:0; padding:0; border-top:1px solid var(--line); }
+  .price-list li{ display:grid; grid-template-columns:26px 1fr; gap:14px; padding:14px 2px; border-bottom:1px solid var(--line); font-size:14.5px; color:var(--ink-65); }
+  .price-list li .ix{ font-family:var(--mono); font-size:10.5px; color:var(--coral); }
+  .price-list li em{ font-family:var(--serif); font-style:italic; color:var(--ink); }
+  .price-cta{ margin-top:34px; display:flex; align-items:center; gap:22px; }
+  .price-cta a.alt{ font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-45); transition:color .2s; }
+  .price-cta a.alt:hover{ color:var(--coral); }
+
+  /* ════════ FINAL CTA (image bookend) ════════ */
+  .final{ position:relative; min-height:78vh; display:flex; align-items:center; background:#241c16; overflow:hidden; }
+  .final-img{ position:absolute; inset:0; z-index:0;
+    background-color:#241c16;
+    background-image:url('https://images.unsplash.com/photo-1497032205916-ac775f0649ae?auto=format&fit=crop&w=2200&q=80');
+    background-size:cover; background-position:center 50%; filter:saturate(.8) brightness(.78); }
+  .final-img::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, rgba(12,10,7,.55), rgba(12,10,7,.78)); }
+  .final-inner{ position:relative; z-index:2; width:100%; text-align:left; }
+  .final .eyebrow{ color:var(--cream-45); }
+  .final h2{ font-family:var(--serif); font-weight:330; font-size:clamp(40px,6vw,92px); line-height:.96; letter-spacing:-.025em; color:var(--cream); margin:20px 0 26px; max-width:14ch; }
+  .final h2 em{ font-style:italic; color:var(--coral); }
+  .final .form{ display:flex; gap:12px; max-width:520px; margin-top:8px; }
+  .final input{ flex:1; min-width:0; background:rgba(243,236,220,.06); border:1px solid var(--cream-30); border-radius:2px; color:var(--cream); padding:15px 16px; font-family:var(--sans); font-size:15px; }
+  .final input::placeholder{ color:var(--cream-45); }
+  .final input:focus{ outline:none; border-color:var(--coral); }
+  .final .form .btn{ background:var(--cream); color:var(--ink); border-color:var(--cream); }
+  .final .form .btn:hover{ background:transparent; color:var(--cream); }
+
+  /* ════════ FOOTER (big wordmark, Soren/Sinter-style) ════════ */
+  footer{ background:var(--bone); padding:88px 0 40px; border-top:1px solid var(--line); }
+  .foot-cols{ display:grid; grid-template-columns:1fr; gap:34px; padding-bottom:64px; }
+  @media(min-width:640px){ .foot-cols{ grid-template-columns:2fr 1fr 1fr 1fr; gap:40px; } }
+  .foot-cols .lead p{ font-family:var(--serif); font-style:italic; font-size:19px; line-height:1.5; color:var(--ink-65); max-width:30ch; margin:14px 0 0; }
+  .foot-col h5{ font-family:var(--mono); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--coral); margin:0 0 16px; }
+  .foot-col a{ display:block; font-size:14.5px; color:var(--ink-65); padding:5px 0; transition:color .2s; }
+  .foot-col a:hover{ color:var(--ink); }
+  .foot-mark{ font-family:var(--serif); font-weight:330; font-style:italic; font-size:clamp(80px,24vw,300px); line-height:.78; letter-spacing:-.04em; color:var(--ink); padding:40px 0 8px; }
+  .foot-base{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:14px; border-top:1px solid var(--line); padding-top:26px; font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-45); }
+  .foot-base a{ color:var(--ink-45); }
+  .foot-base a:hover{ color:var(--coral); }
+</style>
+</head>
+<body>
+
+  <!-- ══════════ HERO ══════════ -->
+  <header class="hero">
+    <div class="hero-img" aria-hidden="true"></div>
+
+    <nav class="nav">
+      <a href="#" class="brand">Relay</a>
+      <div class="nav-links">
+        <a href="#features"><span class="num">i.</span>Practice</a>
+        <a href="#privacy"><span class="num">ii.</span>Doctrine</a>
+        <a href="#pricing"><span class="num">iii.</span>Retainer</a>
+        <a href="#waitlist"><span class="num">iv.</span>Access</a>
+      </div>
+      <a href="#waitlist" class="nav-cta">Join the Waitlist</a>
+    </nav>
+
+    <div class="chip" aria-hidden="true">
+      <span class="live"></span>
+      0&nbsp;KB sent · uptime <span id="uptime">00:00</span> · local model
+    </div>
+
+    <div class="hero-inner">
+      <div class="wrap">
+        <h1 class="display reveal in">Counsel that <em>never</em><br>leaves your machine.</h1>
+        <div class="sub reveal in"><span class="bar"></span>A local-first AI for the practice of law</div>
+      </div>
+    </div>
+
+    <div class="next-cue" aria-hidden="true"><span class="ln"></span>Scroll</div>
+  </header>
+
+  <!-- ══════════ BREATH BAND ══════════ -->
+  <section class="breath">
+    <div class="wrap">
+      <div class="pin reveal">§ 001</div>
+      <p class="reveal">Your most privileged work, on the one machine you control.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ TICKER ══════════ -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-row">
+      <span>Local-first.</span><span class="sep">❦</span>
+      <span>No cloud, ever.</span><span class="sep">❦</span>
+      <span>Privileged by design.</span><span class="sep">❦</span>
+      <span>Runs on your hardware.</span><span class="sep">❦</span>
+      <span>Discovery-safe.</span><span class="sep">❦</span>
+      <span>Air-gapped capable.</span><span class="sep">❦</span>
+      <span>Local-first.</span><span class="sep">❦</span>
+      <span>No cloud, ever.</span><span class="sep">❦</span>
+      <span>Privileged by design.</span><span class="sep">❦</span>
+      <span>Runs on your hardware.</span><span class="sep">❦</span>
+      <span>Discovery-safe.</span><span class="sep">❦</span>
+      <span>Air-gapped capable.</span><span class="sep">❦</span>
+    </div>
+  </div>
+
+  <!-- ══════════ FEATURES ══════════ -->
+  <section id="features">
+
+    <!-- Book I — text left, plate right -->
+    <div class="feature">
+      <div class="wrap">
+        <div class="feature-grid">
+          <div class="reveal">
+            <div class="feature-head">
+              <div class="feature-num">I.</div>
+              <div class="feature-meta">
+                <div class="bk">Book I · Of Filings</div>
+                <div class="tg">Smart filing</div>
+              </div>
+            </div>
+            <h2 class="display">File with <em>confidence.</em></h2>
+            <p class="para">Check every citation. Generate tables of contents and authorities in seconds. Evaluate argument strength before opposing counsel does — all without leaving your draft.</p>
+            <ul>
+              <li><span class="pp">¶ 1</span><span><b>Citation verification</b> flags shepardized changes against the offline reporter snapshot bundled with Relay.</span></li>
+              <li><span class="pp">¶ 2</span><span><b>One-click TOA &amp; TOC</b>, extracted in your firm's house style. Export to .docx with formatting intact.</span></li>
+              <li><span class="pp">¶ 3</span><span><b>Argument strength scoring</b> gives an objective read on which arguments carry weight — computed locally.</span></li>
+            </ul>
+          </div>
+          <div class="reveal">
+            <div class="plate">
+              <div class="plate-bar"><i></i><i></i><i></i><span>citation check · Thorngate v. Meridian</span></div>
+              <div class="plate-body"><span class="lbl">[ citation panel ]</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Book II — plate bleeds off LEFT, text right -->
+    <div class="feature" style="background:var(--bone-2);">
+      <div class="wrap">
+        <div class="feature-grid">
+          <div class="reveal" style="order:2;">
+            <div class="feature-head">
+              <div class="feature-num">II.</div>
+              <div class="feature-meta">
+                <div class="bk">Book II · Of Matters</div>
+                <div class="tg">Document analysis</div>
+              </div>
+            </div>
+            <h2 class="display">A matter that <em>thinks</em> with you.</h2>
+            <p class="para">Drop in a complaint, a deposition, a 4,000-page production. Relay reads it where it sits — on your own disk — and surfaces what changes the case.</p>
+            <ul>
+              <li><span class="pp">¶ 1</span><span><b>Inconsistency detection</b> surfaces conflicts with documented timelines.</span></li>
+              <li><span class="pp">¶ 2</span><span><b>Visualizations on demand</b> generate timelines, party diagrams, and demonstratives.</span></li>
+              <li><span class="pp">¶ 3</span><span><b>Matter-level memory</b> remembers parties, deadlines, and strategy across every chat.</span></li>
+            </ul>
+          </div>
+          <div class="reveal" style="order:1;">
+            <div class="plate">
+              <div class="plate-bar"><i></i><i></i><i></i><span>matter workspace · ask anything</span></div>
+              <div class="plate-body"><span class="lbl">[ matter workspace ]</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Book III — text left, plate bleeds RIGHT off viewport -->
+    <div class="feature bleed-right">
+      <div class="wrap">
+        <div class="feature-grid">
+          <div class="reveal">
+            <div class="feature-head">
+              <div class="feature-num">III.</div>
+              <div class="feature-meta">
+                <div class="bk">Book III · Of Hours</div>
+                <div class="tg">Billing</div>
+              </div>
+            </div>
+            <h2 class="display">Passive billing that <em>finds the hours</em> you lost.</h2>
+            <p class="para">Relay watches your work across matters — quietly and locally — and builds accurate time entries in the background. Review weekly. Bill on your schedule.</p>
+            <ul>
+              <li><span class="pp">¶ 1</span><span><b>Activity capture</b> matches windows, files, and email subjects to matters automatically.</span></li>
+              <li><span class="pp">¶ 2</span><span><b>Confidence flags</b> surface low-confidence entries for review before export.</span></li>
+              <li><span class="pp">¶ 3</span><span><b>Export-ready entries</b> push to Clio, PracticePanther, or a clean CSV.</span></li>
+            </ul>
+          </div>
+          <div class="reveal">
+            <div class="plate">
+              <div class="plate-bar"><i></i><i></i><i></i><span>billing · review &amp; approve</span></div>
+              <div class="plate-body"><span class="lbl">[ billing review ]</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════ PRIVACY DOCTRINE (dark) ══════════ -->
+  <section class="privacy" id="privacy">
+    <div class="wrap">
+      <div class="head reveal">
+        <span class="eyebrow"><span class="dot">§</span>&nbsp; The Privacy Doctrine</span>
+        <h2><em>We never see anything.</em><br><span class="mut">By design, not by policy.</span></h2>
+      </div>
+
+      <div class="doctrine">
+        <div class="row reveal">
+          <div class="rn">I.<small>Inference</small></div>
+          <div>
+            <h4>Inference is <em>local.</em></h4>
+            <p>Every AI inference runs on the computer in your office. No prompt, no document, no thought leaves the machine. <strong>Verify with your own packet capture.</strong></p>
+          </div>
+        </div>
+        <div class="row reveal">
+          <div class="rn">II.<small>Storage</small></div>
+          <div>
+            <h4>Storage is <em>local.</em></h4>
+            <p>Your files stay on your disk in their original location. Relay reads them in place and never copies, syncs, or uploads. <strong>Nothing to breach, because nothing is centralized.</strong></p>
+          </div>
+        </div>
+        <div class="row reveal">
+          <div class="rn">III.<small>Training</small></div>
+          <div>
+            <h4>Training is <em>not</em> on your data.</h4>
+            <p>Your work product is never used to train, fine-tune, or evaluate any model. <strong>Telemetry is opt-in, anonymous, and limited to crash reports.</strong></p>
+          </div>
+        </div>
+        <div class="row reveal">
+          <div class="rn">IV.<small>Compliance</small></div>
+          <div>
+            <h4>Compliance is the <em>default</em> state.</h4>
+            <p>Relay's architecture maps cleanly to ABA Model Rule 1.6 and the analogous state rules. <strong>No private-mode toggle to forget.</strong></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="seal reveal">Enforced in code, not in a contract.</div>
+    </div>
+  </section>
+
+  <!-- ══════════ PRICING ══════════ -->
+  <section class="pricing" id="pricing">
+    <div class="wrap">
+      <div class="pricing-top reveal">
+        <span class="eyebrow"><span class="dot">§</span>&nbsp; The Retainer</span>
+        <h2 class="display">One price. <em>No usage games.</em></h2>
+      </div>
+
+      <div class="price-grid">
+        <div class="price-figure reveal">
+          <div class="docket">Early adopter · № 2026-EA-001</div>
+          <div class="big"><em>$50</em></div>
+          <div class="unit">per user / month <span class="was">$200</span></div>
+        </div>
+        <div class="reveal">
+          <ul class="price-list">
+            <li><span class="ix">a.</span><span><em>Tables</em> of contents &amp; authorities, generated</span></li>
+            <li><span class="ix">b.</span><span><em>Unlimited</em> case queries</span></li>
+            <li><span class="ix">c.</span><span><em>Automatic</em> time tracking &amp; billing export</span></li>
+            <li><span class="ix">d.</span><span><em>Unlimited</em> document uploads</span></li>
+            <li><span class="ix">e.</span><span><em>Matter-level</em> workspaces</span></li>
+            <li><span class="ix">f.</span><span><em>Future</em> features at competitive pricing</span></li>
+          </ul>
+          <div class="price-cta">
+            <a href="#waitlist" class="btn">Get started <span class="arr">→</span></a>
+            <a href="#waitlist" class="alt">or join the waitlist</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ FINAL CTA ══════════ -->
+  <section class="final" id="waitlist">
+    <div class="final-img" aria-hidden="true"></div>
+    <div class="final-inner">
+      <div class="wrap">
+        <span class="eyebrow reveal in"><span class="dot">§</span>&nbsp; Early Access</span>
+        <h2 class="reveal in">Be <em>first</em> in line.</h2>
+        <form class="form reveal in" onsubmit="return false;">
+          <input type="email" placeholder="you@yourfirm.com" aria-label="Email address" />
+          <button class="btn" type="submit">Join <span class="arr">→</span></button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ FOOTER ══════════ -->
+  <footer>
+    <div class="wrap">
+      <div class="foot-cols">
+        <div class="lead">
+          <a href="#" class="brand" style="color:var(--ink);">Relay</a>
+          <p>The AI counsel that runs entirely on your machine.</p>
+        </div>
+        <div class="foot-col">
+          <h5>Practice</h5>
+          <a href="#features">Filings</a>
+          <a href="#features">Matters</a>
+          <a href="#features">Billing</a>
+        </div>
+        <div class="foot-col">
+          <h5>Company</h5>
+          <a href="#privacy">The Doctrine</a>
+          <a href="#pricing">Retainer</a>
+          <a href="mailto:support@relay-law.com">Contact</a>
+        </div>
+        <div class="foot-col">
+          <h5>Get started</h5>
+          <a href="#waitlist">Early access</a>
+          <a href="#waitlist">Join the waitlist</a>
+        </div>
+      </div>
+
+      <div class="foot-mark" aria-hidden="true">Relay</div>
+
+      <div class="foot-base">
+        <span>© 2026 · Relay Legal Technologies, Inc.</span>
+        <span>Local-first · Bar-compliant by default</span>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // scroll reveal
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // live uptime in hero chip
+    let s = 0; const u = document.getElementById('uptime');
+    setInterval(() => { s++; const m = String(Math.floor(s/60)).padStart(2,'0'); const ss = String(s%60).padStart(2,'0'); if (u) u.textContent = m + ':' + ss; }, 1000);
+  </script>
+</body>
+</html>

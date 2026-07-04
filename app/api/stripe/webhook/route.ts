@@ -150,6 +150,7 @@ async function upsertFromSubscription(subscription: Stripe.Subscription): Promis
     seats,
     status: subscription.status,
     currentPeriodEnd: item?.current_period_end ?? 0,
+    cancelAtPeriodEnd: subscription.cancel_at_period_end,
     updatedAt: new Date().toISOString(),
   };
 

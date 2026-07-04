@@ -35,23 +35,31 @@ export async function POST(request: NextRequest) {
 		);
 	}
 
-	const firm = await getFirmByLicenseKey(licenseKey);
-	if (!firm) {
-		return NextResponse.json({ error: "unknown license key" }, { status: 404 });
-	}
+  // Redis lookup. A connection/config failure here (e.g. a bad RELAY_REDIS_URL)
+  // must surface as a 503 the firm server can retry — not an opaque 500.
+  let firm;
+  try {
+    firm = await getFirmByLicenseKey(licenseKey);
+  } catch (err) {
+    console.error("[license/validate] store lookup failed:", err);
+    return NextResponse.json({ error: "license store unavailable" }, { status: 503 });
+  }
 
-	try {
-		const token = await signLicense({
-			firmId: firm.stripeCustomerId,
-			seats: firm.seats,
-			status: mapStripeStatus(firm.status),
-		});
-		return NextResponse.json({ token });
-	} catch (error) {
-		console.error("Error signing license:", error);
-		return NextResponse.json(
-			{ error: "issue signing license" },
-			{ status: 500 },
-		);
-	}
+  if (!firm) {
+    return NextResponse.json({ error: "unknown license key" }, { status: 404 });
+  }
+
+  // Signing failure means a misconfigured LICENSE_SIGNING_KEY (unset or not a
+  // valid PKCS8 PEM). Log it so the cause is visible instead of a bare 500.
+  try {
+    const token = await signLicense({
+      firmId: firm.stripeCustomerId,
+      seats: firm.seats,
+      status: mapStripeStatus(firm.status),
+    });
+    return NextResponse.json({ token });
+  } catch (err) {
+    console.error("[license/validate] signing failed:", err);
+    return NextResponse.json({ error: "license signing misconfigured" }, { status: 500 });
+  }
 }
