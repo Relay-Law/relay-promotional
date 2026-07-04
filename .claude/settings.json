@@ -84,7 +84,8 @@
       "Bash(python -m py_compile app/config.py app/routes/health.py)",
       "Bash(bash -n macos/relay-update.sh)",
       "Bash(bash -n macos/relay-uninstall.sh)",
-      "Bash(curl -sL -o cta_new.jpg \"https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=2400&q=80&auto=format&fit=crop\")"
+      "Bash(curl -sL -o cta_new.jpg \"https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=2400&q=80&auto=format&fit=crop\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({k:\\('<redacted>' if 'ey' in k.lower\\(\\) or 'secret' in k.lower\\(\\) else v\\) for k,v in d.items\\(\\)}, indent=2\\)\\)\")"
     ],
     "additionalDirectories": [
       "C:\\Users\\matth\\.claude\\commands",

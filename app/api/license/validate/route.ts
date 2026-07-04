@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getFirmByLicenseKey } from "@/lib/store";
 import { mapStripeStatus, signLicense } from "@/lib/license";
+import { getFirmByLicenseKey } from "@/lib/store";
+import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
@@ -17,17 +17,23 @@ export const runtime = "nodejs";
  * Unknown keys get 404 (no token).
  */
 export async function POST(request: NextRequest) {
-  let licenseKey: string;
-  try {
-    const body = await request.json();
-    licenseKey = (body.license_key ?? "").trim();
-  } catch {
-    return NextResponse.json({ error: "invalid request body" }, { status: 400 });
-  }
+	let licenseKey: string;
+	try {
+		const body = await request.json();
+		licenseKey = (body.license_key ?? "").trim();
+	} catch {
+		return NextResponse.json(
+			{ error: "invalid request body" },
+			{ status: 400 },
+		);
+	}
 
-  if (!licenseKey) {
-    return NextResponse.json({ error: "license_key required" }, { status: 400 });
-  }
+	if (!licenseKey) {
+		return NextResponse.json(
+			{ error: "license_key required" },
+			{ status: 400 },
+		);
+	}
 
   // Redis lookup. A connection/config failure here (e.g. a bad RELAY_REDIS_URL)
   // must surface as a 503 the firm server can retry — not an opaque 500.
