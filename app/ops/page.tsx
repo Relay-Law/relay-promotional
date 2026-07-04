@@ -32,7 +32,7 @@ export default function FleetPage() {
     load();
   }, [load]);
 
-  async function dev(action: "seed" | "reindex") {
+  async function dev(action: "reindex") {
     setBusy(true);
     try {
       await fetch(`/api/ops/${action}`, { method: "POST" });
@@ -96,9 +96,6 @@ export default function FleetPage() {
           <div style={{ display: "flex", gap: 10 }}>
             <button className="btn-ghost" style={smallBtn} disabled={busy} onClick={() => dev("reindex")}>
               Reindex
-            </button>
-            <button className="btn-ghost" style={smallBtn} disabled={busy} onClick={() => dev("seed")}>
-              Seed demo data
             </button>
             <button className="btn-ghost" style={smallBtn} disabled={busy} onClick={load}>
               Refresh

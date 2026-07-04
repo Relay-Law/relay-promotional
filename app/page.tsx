@@ -318,7 +318,7 @@ export default function Home() {
                 ))}
                 <div style={{ ...rowBetween, marginTop: 8, borderTop: "1px solid var(--line)", paddingTop: 8 }}>
                   <span style={{ fontFamily: "var(--sans)", fontSize: 11, fontWeight: 500, letterSpacing: ".14em", textTransform: "uppercase", color: "var(--ink-45)" }}>Ready to bill</span>
-                  <span style={{ fontFamily: "var(--serif)", fontStyle: "italic", fontSize: 26, color: "var(--green)" }}>6.2 h</span>
+                  <span style={{ fontFamily: "var(--serif)", fontStyle: "italic", fontSize: 26, color: "var(--green)" }}>4.1 h</span>
                 </div>
               </div>
             </div>
@@ -468,8 +468,6 @@ export default function Home() {
               <a href="#waitlist">Join the waitlist</a>
             </div>
           </div>
-
-          <div className="rl-footmark" aria-hidden="true">Relay</div>
 
           <div className="rl-footbase">
             <span>© 2026 · Relay Legal Technologies, Inc.</span>
