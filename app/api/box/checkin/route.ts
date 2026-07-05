@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * POST /api/box/checkin — the firm's relay-api calls this daily to (1) report telemetry and
  * (2) learn whether the ops team wants it running a different version.
  *
- *   Request:  { license_key, server_version?, hostname?, active_seats?, health?,
+ *   Request:  { license_key, firm_name?, server_version?, hostname?, active_seats?, health?,
  *               update_status?, update_error? }
  *   Response: { targetVersion: string | null, updateStatus }
  *
@@ -33,6 +33,11 @@ export async function POST(request: NextRequest) {
   // Build the telemetry patch from only the fields the box actually sent, so a sparse check-in
   // never blanks out previously-reported values.
   const patch: Partial<FirmRecord> = { lastSeenAt: new Date().toISOString() };
+  // The box reports the firm name baked in at provisioning (relay.env RELAY_FIRM_NAME). This is the
+  // only channel that carries it to the control plane, so the ops dashboard stays blank without it.
+  if (typeof body.firm_name === "string" && body.firm_name.trim()) {
+    patch.firmName = body.firm_name.trim();
+  }
   if (typeof body.server_version === "string" && body.server_version.trim()) {
     patch.relayVersion = body.server_version.trim();
   }
