@@ -44,7 +44,8 @@ export interface FirmRecord {
   cancelAtPeriodEnd?: boolean;
 
   // ── Ops telemetry (all optional; written by the box's daily check-in) ────────
-  /** Human-friendly firm name shown in the ops dashboard. */
+  /** Human-friendly firm name shown in the ops dashboard. Reported by the box's check-in
+   *  (baked into relay.env as RELAY_FIRM_NAME at provisioning). */
   firmName?: string;
   /** Backend version the box last reported (e.g. "0.3.1"). */
   relayVersion?: string;

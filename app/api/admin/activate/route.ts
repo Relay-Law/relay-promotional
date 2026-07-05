@@ -11,7 +11,8 @@ export const runtime = "nodejs";
  * sync; their server picks up the new entitlement on its next /api/license/validate poll.
  *
  * Auth: `x-admin-key: <ADMIN_API_KEY>`.
- * Body: { licenseKey: string }  — the key generated at signup and pasted into their server.
+ * Body: { licenseKey: string, firmName?: string }  — the key generated at signup and pasted into
+ * their server, plus the firm name baked into the box (so the ops record is named from day one).
  */
 function authorized(request: NextRequest): boolean {
   const expected = process.env.ADMIN_API_KEY ?? "";
@@ -26,15 +27,17 @@ export async function POST(request: NextRequest) {
   }
 
   let licenseKey: string;
+  let firmName: string | undefined;
   try {
     const body = await request.json();
     licenseKey = (body.licenseKey ?? "").trim();
+    firmName = typeof body.firmName === "string" ? body.firmName : undefined;
   } catch {
     return NextResponse.json({ error: "invalid request body" }, { status: 400 });
   }
 
   try {
-    const result = await activateFirm(licenseKey);
+    const result = await activateFirm(licenseKey, { firmName });
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof ActivateError) {
