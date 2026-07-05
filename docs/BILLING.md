@@ -2,7 +2,7 @@
 
 How "pay in the browser" becomes "unlocked in the software" — the **system and the why**. For the
 exact step-by-step (deploy, install a firm's server, get the first admin on, invite attorneys),
-see **[README.md](README.md)**.
+see **[README.md](../README.md)**.
 
 ## Model in one paragraph
 
@@ -76,7 +76,7 @@ Shared code: [lib/stripe.ts](lib/stripe.ts), [lib/store.ts](lib/store.ts) (Redis
 > (encoding the real status) so relay-api's `require_seat()` can show the right message.
 
 > **Setup, env vars, and the local/Stripe-CLI test recipe** live in
-> [README.md](README.md) (§1) and [.env.local.example](.env.local.example).
+> [README.md](../README.md) (§1) and [.env.local.example](../.env.local.example).
 
 ## Hardware financing (lease)
 
@@ -120,7 +120,7 @@ relay-api's 12h poll is only the **steady-state background** refresh. It *also* 
 startup** and **synchronously when its cached token is missing/expired** — so after activation, a
 `docker compose restart relay-api` makes the new entitlement live in seconds (no 12h wait). The
 deploy runbook installs the server in dev mode *first* precisely so it never caches a pre-activation
-"denied" token that a plain restart wouldn't re-fetch. Step-by-step in [README.md](README.md) §5–6.
+"denied" token that a plain restart wouldn't re-fetch. Step-by-step in [README.md](../README.md) §5–6.
 > Future nicety: a "refresh license now" command on relay-api (or short-TTL pre-activation tokens)
 > would remove even the restart.
 

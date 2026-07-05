@@ -30,3 +30,6 @@ yarn-error.log*
 .vercel
 
 .claude
+
+# clerk (unused — next-auth is the auth layer; keeps stray keyless artifacts out)
+.clerk
