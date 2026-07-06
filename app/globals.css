@@ -188,11 +188,69 @@
   --serif:var(--font-fraunces), Georgia, "Times New Roman", serif;
   --sans:var(--font-inter-tight), system-ui, -apple-system, "Segoe UI", sans-serif;
   --pad:clamp(24px,5vw,56px);
+  --rl-nav-h:72px;
   background:var(--paper); color:var(--ink);
   font-family:var(--sans); font-weight:400; font-size:16px; line-height:1.6;
-  letter-spacing:-.006em; overflow-x:hidden;
+  letter-spacing:-.006em;
+  /* clip, not hidden: an overflow-x:hidden ancestor disables position:sticky
+     (needed by the book deck); clip crops without creating a scroll container */
+  overflow-x:hidden; overflow-x:clip;
+
+  /* highlighter swatch masks — a slanted (skewX), rough-edged (feTurbulence
+     displacement) marker shape. The shape is solid through the middle and
+     only ragged at the extreme edges, so glyphs sitting in the interior are
+     never clipped. Two seeds/slants alternate so no two passes look identical. */
+  --rl-hl:   url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='64' preserveAspectRatio='none'><filter id='r' x='-12%25' y='-30%25' width='124%25' height='160%25'><feTurbulence type='fractalNoise' baseFrequency='0.016 0.03' numOctaves='2' seed='5' result='n'/><feDisplacementMap in='SourceGraphic' in2='n' scale='5'/></filter><rect x='8' y='6' width='304' height='52' rx='13' fill='%23fff' filter='url(%23r)' transform='skewX(-8)'/></svg>");
+  --rl-hl-b: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='320' height='64' preserveAspectRatio='none'><filter id='r' x='-12%25' y='-30%25' width='124%25' height='160%25'><feTurbulence type='fractalNoise' baseFrequency='0.019 0.028' numOctaves='2' seed='12' result='n'/><feDisplacementMap in='SourceGraphic' in2='n' scale='5.5'/></filter><rect x='8' y='6' width='304' height='52' rx='10' fill='%23fff' filter='url(%23r)' transform='skewX(7)'/></svg>");
 }
 .rl ::selection { background:var(--coral); color:#fff; }
+
+/* ───────── highlighter emphasis ─────────
+   The important phrases (feature-list terms and doctrine punchlines) are
+   already marked up with <b>/<strong>. We paint the section accent (--ac)
+   behind them and clip it to the rough, slanted swatch above, then multiply
+   it onto the parchment so it reads like an actual highlighter pass — uneven
+   ink that picks up whatever colour the surrounding section is using.
+   box-decoration-break keeps the swatch intact when a phrase wraps. */
+.rl-list b,
+.rl-dbody strong,
+.rl-mark {
+  position:relative;
+  color:var(--ink);
+  background-color:color-mix(in srgb, var(--ac) 58%, #fff);
+  mix-blend-mode:multiply;
+  -webkit-box-decoration-break:clone;
+          box-decoration-break:clone;
+  -webkit-mask-image:var(--rl-hl); mask-image:var(--rl-hl);
+  -webkit-mask-size:100% 106%;     mask-size:100% 106%;
+  -webkit-mask-position:0 52%;     mask-position:0 52%;
+  -webkit-mask-repeat:no-repeat;   mask-repeat:no-repeat;
+  padding:.05em .34em;
+  margin:0 -.2em;
+  border-radius:2px;
+}
+.rl-list li:nth-of-type(even) b,
+.rl-dbody strong:nth-of-type(even) {
+  -webkit-mask-image:var(--rl-hl-b); mask-image:var(--rl-hl-b);
+}
+@supports not (color:color-mix(in srgb, red, blue)) {
+  .rl-list b, .rl-dbody strong, .rl-mark { background-color:var(--ac); }
+}
+
+/* ───────── billing / checkout (shares the .rl light theme) ───────── */
+.rl-topbar { position:sticky; top:0; z-index:50; border-bottom:1px solid var(--line); background:rgba(250,245,232,.82); backdrop-filter:saturate(140%) blur(12px); -webkit-backdrop-filter:saturate(140%) blur(12px); }
+.rl-topbar-inner { display:flex; align-items:center; justify-content:space-between; gap:24px; padding:20px 0; }
+.rl-card { background:var(--card); border:1px solid var(--line); border-radius:6px; padding:24px; }
+.rl-label { display:block; font-family:var(--sans); font-size:14px; font-weight:500; color:var(--ink); }
+.rl-help { margin:5px 0 14px; font-family:var(--sans); font-size:13px; line-height:1.5; color:var(--ink-45); }
+.rl-input { width:100%; padding:13px 14px; border-radius:3px; border:1px solid var(--line); background:#fffdf7; color:var(--ink); font-family:var(--sans); font-size:15px; outline:none; transition:border-color .18s; }
+.rl-input::placeholder { color:var(--ink-30); }
+.rl-input:focus { border-color:var(--coral); }
+.rl-opt { text-align:left; padding:14px 16px; border-radius:4px; border:1px solid var(--line); background:transparent; transition:border-color .16s, background-color .16s; cursor:pointer; width:100%; }
+.rl-opt:hover { border-color:color-mix(in srgb, var(--coral) 50%, var(--line)); }
+.rl-opt.active { border-color:var(--coral); background:color-mix(in srgb, var(--coral) 9%, transparent); }
+.rl-step { width:38px; height:38px; border-radius:4px; border:1px solid var(--line); background:#fffdf7; color:var(--ink); font-size:20px; line-height:1; display:grid; place-items:center; transition:border-color .16s; }
+.rl-step:hover { border-color:var(--coral); }
 .rl-wrap { max-width:1240px; margin:0 auto; padding:0 var(--pad); width:100%; }
 .rl-kicker { width:40px; height:2px; background:var(--ac); margin-bottom:24px; }
 .rl-kicker.center { margin-left:auto; margin-right:auto; }
@@ -207,21 +265,50 @@
 .rl-btn-ghost:hover { border-color:var(--cream); }
 
 /* hero */
-.rl-hero { position:relative; min-height:96vh; display:flex; flex-direction:column; justify-content:flex-end; background:#2a211a; overflow:hidden; }
-.rl-hero-img { position:absolute; inset:0; z-index:0; background-color:#2a211a; background-image:url('/hero.jpg'); background-size:cover; background-position:center 38%; filter:saturate(.86) brightness(.92); }
-.rl-hero-scrim { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg,rgba(20,14,7,.32) 0%,rgba(20,14,7,.06) 32%,rgba(20,14,7,.20) 58%,rgba(15,9,4,.82) 100%); }
-.rl-nav { position:absolute; top:0; left:0; right:0; z-index:20; display:flex; align-items:center; justify-content:space-between; padding:30px var(--pad); color:var(--cream); }
-.rl-brand { font-family:var(--serif); font-size:23px; font-style:italic; letter-spacing:-.02em; }
+.rl-nav { position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; justify-content:space-between; padding:30px var(--pad); color:var(--cream); background:transparent; border-bottom:1px solid transparent; box-shadow:none; transition:background-color .25s,border-color .25s,box-shadow .25s,color .25s; }
+.rl-nav.is-solid { border-bottom:1px solid var(--line); background:rgba(250,245,232,.92); backdrop-filter:saturate(140%) blur(12px); -webkit-backdrop-filter:saturate(140%) blur(12px); box-shadow:0 4px 24px rgba(27,20,13,.08); color:var(--ink); }
+.rl-brand { position:relative; display:block; line-height:0; }
+.rl-brand-logo { height:26px; width:auto; display:block; transition:opacity .25s; }
+.rl-brand-logo--dark { position:absolute; left:0; top:0; opacity:0; }
+.rl-nav.is-solid .rl-brand-logo--light { opacity:0; }
+.rl-nav.is-solid .rl-brand-logo--dark { opacity:1; position:static; }
 .rl-nav-links { display:flex; gap:30px; align-items:center; font-family:var(--sans); font-size:11px; letter-spacing:.16em; text-transform:uppercase; font-weight:500; }
 .rl-nav-links a { color:var(--cream-45); transition:color .2s; }
 .rl-nav-links a:hover { color:var(--cream); }
+.rl-nav.is-solid .rl-nav-links a { color:var(--ink-65); }
+.rl-nav.is-solid .rl-nav-links a:hover { color:var(--ink); }
 .rl-num { font-family:var(--serif); font-style:italic; text-transform:none; margin-right:7px; }
-.rl-nav-cta { font-family:var(--sans); font-size:11px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; color:var(--cream); border:1px solid var(--cream-30); padding:9px 16px; border-radius:2px; transition:border-color .2s; }
+.rl-nav-cta { font-family:var(--sans); font-size:11px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; color:var(--cream); border:1px solid var(--cream-30); padding:9px 16px; border-radius:2px; transition:border-color .2s,color .2s; }
 .rl-nav-cta:hover { border-color:var(--cream); }
+.rl-nav.is-solid .rl-nav-cta { color:var(--ink); border-color:var(--line); }
+.rl-nav.is-solid .rl-nav-cta:hover { border-color:var(--ink-65); }
 @media (max-width:880px) { .rl-nav-links { display:none; } }
+.rl-hero { position:relative; min-height:78vh; min-height:78svh; display:flex; flex-direction:column; justify-content:flex-end; background:#2a211a; overflow:hidden; }
+.rl-hero-img { position:absolute; inset:0; z-index:0; background-color:#2a211a; background-image:url('/hero.jpg'); background-size:cover; background-position:center 38%; filter:saturate(.86) brightness(.92); }
+.rl-hero-scrim { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg,rgba(20,14,7,.32) 0%,rgba(20,14,7,.06) 32%,rgba(20,14,7,.20) 58%,rgba(15,9,4,.82) 100%); }
 .rl-hero-inner { position:relative; z-index:2; width:100%; padding-bottom:clamp(48px,7vw,80px); }
 .rl-h1 { font-family:var(--serif); font-weight:340; color:var(--cream); margin:0; line-height:.92; letter-spacing:-.025em; font-size:clamp(46px,9.4vw,140px); max-width:15ch; }
-.rl-h1 em { font-style:italic; color:var(--coral); }
+/* The hero highlight is a pseudo-element band behind the word rather than a
+   background+mask on the em itself: at line-height .92 the inline box (and
+   its mask) bled onto the lines above/below, and masking the element could
+   clip glyphs. The band is sized in em so it hugs the word on its own line. */
+.rl-h1 em {
+  position:relative;
+  font-style:italic;
+  color:#fff;
+  padding:0 .3em;
+  margin:0 -.18em;
+}
+.rl-h1 em::before {
+  content:"";
+  position:absolute; z-index:-1;
+  left:0; right:0;
+  top:50%; height:.78em;
+  transform:translateY(-54%);
+  background:var(--coral);
+  -webkit-mask:var(--rl-hl) center / 100% 100% no-repeat;
+          mask:var(--rl-hl) center / 100% 100% no-repeat;
+}
 .rl-sub { margin-top:24px; display:flex; align-items:center; gap:16px; font-family:var(--sans); font-size:11.5px; font-weight:500; letter-spacing:.16em; text-transform:uppercase; color:var(--cream-45); }
 .rl-sub .bar { width:42px; height:1px; background:var(--cream-30); }
 .rl-hero-p { margin:26px 0 0; max-width:50ch; font-size:17px; line-height:1.62; color:rgba(243,236,220,.74); }
@@ -234,16 +321,70 @@
 .rl-premise-body { margin:34px 0 0; max-width:58ch; font-size:17px; line-height:1.66; color:var(--ink-65); }
 
 /* ticker */
-.rl-ticker { border-top:1px solid var(--line); border-bottom:1px solid var(--line); overflow:hidden; padding:24px 0; }
-.rl-ticker-row { display:flex; gap:0; white-space:nowrap; animation:rl-marquee 46s linear infinite; }
-.rl-ticker-row .t { font-family:var(--serif); font-style:italic; font-size:24px; color:var(--ink-65); padding:0 30px; letter-spacing:-.01em; }
-.rl-ticker-row .d { padding:0 4px; font-size:20px; }
+.rl-ticker { position:relative; border-top:1px solid var(--line); border-bottom:1px solid var(--line); overflow:hidden; padding:24px 0; }
+.rl-ticker-measure { position:absolute; visibility:hidden; pointer-events:none; display:flex; white-space:nowrap; }
+.rl-ticker-inner { display:flex; width:max-content; animation:rl-marquee 138s linear infinite; will-change:transform; }
+.rl-ticker-track { display:flex; flex-shrink:0; align-items:center; white-space:nowrap; }
+.rl-ticker-track .t { font-family:var(--serif); font-style:italic; font-size:24px; color:var(--ink-65); padding:0 30px; letter-spacing:-.01em; }
+.rl-ticker-track .d { padding:0 4px; font-size:20px; }
 @keyframes rl-marquee { from { transform:translateX(0); } to { transform:translateX(-50%); } }
 
-/* features */
-.rl-feature { padding:clamp(80px,9vw,108px) 0; }
-.rl-feature.div { border-top:1px solid var(--line); }
-.rl-feature-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:clamp(44px,7vw,88px); align-items:center; }
+/* ───────── features: stacked book deck ─────────
+   The deck wrapper is (n × 100vh) tall; the stage inside is sticky, so the
+   page appears pinned while the wrapper scrolls by. JS writes scroll progress
+   to --t (0 → n-1) on the stage; each card knows its index --i and derives:
+     --seg   its slice of the timeline
+     --exit  0→1 while it slides off to the left (after a 45% reading dwell)
+     --enter 0→1 as it surfaces from underneath (scales up into place) */
+.rl-deck { position:relative; height:calc(var(--n,7) * 100vh); }
+.rl-deck-stage { position:sticky; top:0; height:100vh; overflow:hidden; }
+.rl-bookcard {
+  --seg:   calc(var(--t,0) - var(--i,0));
+  --exit:  clamp(0, calc((var(--seg) - .45) / .55), 1);
+  --enter: clamp(0, calc((var(--seg) + .55) / .55), 1);
+  position:absolute;
+  top:calc(var(--rl-nav-h,72px) + 14px);
+  bottom:clamp(16px,3.5vh,34px);
+  left:var(--pad); right:var(--pad);
+  background:var(--card);
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:0 34px 70px -34px rgba(27,20,13,.4);
+  display:flex; align-items:center; justify-content:center;
+  padding:clamp(22px,4vw,60px);
+  overflow:hidden;
+  transform:
+    translateX(calc(var(--exit) * -125%))
+    translateY(calc((1 - var(--enter)) * 20px))
+    rotate(calc(var(--exit) * -4deg))
+    scale(calc(.945 + .055 * var(--enter)));
+  will-change:transform;
+}
+.rl-bookcard-grid { width:100%; max-width:1140px; display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:clamp(30px,4.5vw,72px); align-items:center; }
+.rl-bookcard .rl-h2 { font-size:clamp(30px,3.6vw,50px); }
+.rl-bookcard .rl-list { margin-top:26px; }
+.rl-bookcard .rl-list li { padding:13px 2px; }
+
+/* book media: real image once assets exist, dashed template until then */
+.rl-book-img { width:100%; height:auto; max-height:60vh; object-fit:cover; border-radius:6px; border:1px solid var(--line); display:block; }
+.rl-imgph {
+  position:relative; width:100%; aspect-ratio:4/3; max-height:56vh;
+  border:1.5px dashed color-mix(in srgb, var(--ac) 55%, transparent);
+  border-radius:6px;
+  background:repeating-linear-gradient(-45deg, transparent 0 16px, color-mix(in srgb, var(--ac) 5%, transparent) 16px 32px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  text-align:center; padding:24px;
+}
+.rl-imgph .tag { font-family:var(--sans); font-size:10px; font-weight:500; letter-spacing:.2em; text-transform:uppercase; color:var(--ac); border:1px solid color-mix(in srgb, var(--ac) 40%, transparent); padding:4px 10px; border-radius:3px; }
+.rl-imgph .lbl { font-family:var(--serif); font-style:italic; font-size:clamp(17px,1.6vw,22px); color:var(--ink-65); max-width:26ch; line-height:1.3; }
+.rl-imgph .note { font-family:var(--sans); font-size:11px; color:var(--ink-30); letter-spacing:.04em; }
+
+/* fallback: narrow / short viewports and reduced motion get a plain stack */
+@media (max-width:880px), (max-height:600px), (prefers-reduced-motion:reduce) {
+  .rl-deck { height:auto; padding:clamp(48px,8vw,72px) var(--pad); }
+  .rl-deck-stage { position:static; height:auto; overflow:visible; display:grid; gap:24px; }
+  .rl-bookcard { position:static; inset:auto; transform:none; }
+}
 .rl-book-head { display:flex; align-items:flex-start; gap:18px; margin-bottom:26px; }
 .rl-book-num { font-family:var(--serif); font-style:italic; font-size:64px; line-height:.8; color:var(--ac); }
 .rl-book-meta { border-top:2px solid var(--ac); padding-top:12px; }
@@ -256,16 +397,6 @@
 .rl-list li { display:grid; grid-template-columns:34px 1fr; gap:14px; padding:16px 2px; border-bottom:1px solid var(--line); font-size:14.5px; color:var(--ink-65); }
 .rl-list .mk { font-family:var(--serif); font-style:italic; font-size:15px; color:var(--ac); padding-top:1px; }
 .rl-list b { font-family:var(--serif); font-weight:400; font-style:italic; font-size:16px; color:var(--ink); }
-
-/* mock panel (legal-pad motif) */
-.rl-panel { position:relative; border:1px solid var(--line); border-radius:6px; background:var(--card); overflow:hidden; box-shadow:0 40px 80px -50px rgba(27,20,13,.45); }
-.rl-panel-margin { position:absolute; top:0; bottom:0; left:36px; width:2px; background:var(--margin); opacity:.5; }
-.rl-panel-head { display:flex; align-items:center; justify-content:space-between; padding:14px 18px 14px 56px; border-bottom:1px solid var(--line); }
-.rl-panel-tag { display:flex; align-items:center; gap:9px; font-family:var(--sans); font-size:10.5px; font-weight:500; letter-spacing:.18em; text-transform:uppercase; color:var(--ac); }
-.rl-panel-tag .dot { width:7px; height:7px; border-radius:50%; background:var(--ac); display:block; }
-.rl-panel-sub { font-family:var(--serif); font-style:italic; font-size:14px; color:var(--ink-65); }
-.rl-panel-body { padding:22px 26px 26px 56px; background-image:repeating-linear-gradient(to bottom,transparent 0 33px,var(--rule) 33px 34px); }
-.rl-badge { font-family:var(--sans); font-size:9.5px; font-weight:500; letter-spacing:.12em; text-transform:uppercase; color:#fff; background:var(--ac); padding:3px 8px; border-radius:3px; white-space:nowrap; }
 
 /* practice fit */
 .rl-practice { padding:clamp(96px,12vw,128px) 0; border-top:1px solid var(--line); }

@@ -1,24 +1,18 @@
 export default function BillingSuccessPage() {
   return (
     <main
-      style={{
-        minHeight: "100vh",
-        background: "var(--bg)",
-        color: "var(--text-1)",
-        display: "grid",
-        placeItems: "center",
-        padding: 32,
-      }}
+      className="rl"
+      style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 32 }}
     >
-      <div style={{ maxWidth: 560, textAlign: "center" }}>
+      <div style={{ maxWidth: 580, textAlign: "center" }}>
         <div
           aria-hidden
           style={{
             width: 56,
             height: 56,
-            margin: "0 auto 24px",
+            margin: "0 auto 26px",
             borderRadius: "50%",
-            background: "var(--coral-tint)",
+            background: "color-mix(in srgb, var(--coral) 12%, transparent)",
             color: "var(--coral)",
             display: "grid",
             placeItems: "center",
@@ -28,17 +22,37 @@ export default function BillingSuccessPage() {
             <path d="M3 8.5l3.2 3L13 5" />
           </svg>
         </div>
-        <span className="mono coral">You&apos;re reserved</span>
-        <h1 className="display h3" style={{ margin: "12px 0 14px" }}>
-          Card saved - nothing charged yet.
+        <div className="rl-kicker center" />
+        <span className="rl-eyebrow">§ &nbsp; You&apos;re reserved</span>
+        <h1
+          style={{
+            fontFamily: "var(--serif)",
+            fontWeight: 340,
+            fontSize: "clamp(30px,4.4vw,48px)",
+            lineHeight: 1.02,
+            letterSpacing: "-.025em",
+            margin: "16px 0 0",
+            color: "var(--ink)",
+          }}
+        >
+          Card saved — <em style={{ fontStyle: "italic", color: "var(--coral)" }}>nothing charged yet.</em>
         </h1>
-        <p className="lede" style={{ color: "var(--text-2)" }}>
-          We&apos;ll <strong>reach out within 3 business days</strong> to schedule your install. We
-          set up the workstation in your office, verify everything works, and your free trial starts
-          that day — billing only begins when the trial ends.
+        <p
+          style={{
+            fontFamily: "var(--sans)",
+            fontSize: 17,
+            lineHeight: 1.66,
+            color: "var(--ink-65)",
+            margin: "22px auto 0",
+            maxWidth: "54ch",
+          }}
+        >
+          We&apos;ll <strong className="rl-mark">reach out within 3 business days</strong> to schedule
+          your install. We set up the workstation in your office, verify everything works, and your
+          free trial starts that day — billing only begins when the trial ends.
         </p>
-        <a href="/" className="btn-primary" style={{ marginTop: 28 }}>
-          Back to site
+        <a href="/" className="rl-btn" style={{ marginTop: 30 }}>
+          Back to site <span className="arr">→</span>
         </a>
       </div>
     </main>
