@@ -31,7 +31,10 @@ export class ActivateError extends Error {
   }
 }
 
-export async function activateFirm(licenseKey: string): Promise<ActivateResult> {
+export async function activateFirm(
+  licenseKey: string,
+  opts: { firmName?: string } = {},
+): Promise<ActivateResult> {
   const key = licenseKey.trim();
   if (!key) throw new ActivateError("licenseKey required", 400);
 
@@ -41,8 +44,17 @@ export async function activateFirm(licenseKey: string): Promise<ActivateResult> 
   const firm = await getFirmByLicenseKey(key);
   if (!firm) throw new ActivateError("unknown license key", 404);
 
-  // Idempotent: if already activated, just report the existing subscription.
+  // Firm name is baked into the box at build time, so activation (run by relay-provision the day the
+  // box is installed) is the earliest the control plane can learn it — populate the ops record now
+  // rather than waiting for the first daily check-in.
+  const firmName = opts.firmName?.trim() || undefined;
+
+  // Idempotent: if already activated, just report the existing subscription — but still capture the
+  // firm name if it wasn't known yet (or changed on a re-provision).
   if (firm.subscriptionId) {
+    if (firmName && firmName !== firm.firmName) {
+      await saveFirm({ ...firm, firmName });
+    }
     return {
       ok: true,
       alreadyActive: true,
@@ -71,6 +83,7 @@ export async function activateFirm(licenseKey: string): Promise<ActivateResult> 
       status: subscription.status,
       currentPeriodEnd: item?.current_period_end ?? 0,
       activatedAt: new Date().toISOString(),
+      ...(firmName ? { firmName } : {}),
       updatedAt: new Date().toISOString(),
     });
 

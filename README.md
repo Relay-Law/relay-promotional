@@ -5,7 +5,7 @@ end-to-end, get the first admin online, promote an admin, and invite another att
 tailnet.
 
 > For *how the system works* (the architecture, the signed-license contract, the lease design),
-> see **[BILLING.md](BILLING.md)**. This file is the *do-this* guide.
+> see **[docs/BILLING.md](docs/BILLING.md)**. This file is the *do-this* guide.
 
 The system has two halves:
 - **License/promo site** — this repo (Next.js on Vercel). Hosts the marketing site, `/billing`
@@ -260,7 +260,7 @@ seats. Adding seats in the Stripe portal raises the cap on the next license refr
 | `402 subscription_inactive` | Firm not activated, or `past_due`/`canceled`. Run step 6a; check Stripe. |
 | `403 seat_limit_exceeded` | All seats in use. Add seats in the Stripe portal, then wait for refresh. |
 | `503 license_unreachable` | Server can't reach `relay-law.com` and cache expired. Check connectivity. |
-| License stuck on old status | Server cached a token. `docker compose restart relay-api` (see BILLING.md note). |
+| License stuck on old status | Server cached a token. `docker compose restart relay-api` (see docs/BILLING.md note). |
 | Webhook signature errors | `STRIPE_WEBHOOK_SECRET` mismatch, or body was parsed before verify. |
 | Invite returns `501` | `TS_OAUTH_*`/`TS_TAILNET` not set — invite manually from the Tailscale console. |
 | Admin call returns `403 Admin role required` | Caller isn't an admin, or isn't coming through Tailscale as that user. |

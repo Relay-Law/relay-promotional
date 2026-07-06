@@ -8,10 +8,32 @@ export function isDeployed(f: Pick<FirmRecord, "subscriptionId" | "status">): bo
   return Boolean(f.subscriptionId) || ["trialing", "active", "past_due"].includes(f.status);
 }
 
-/** Online if it polled within the last 30 minutes. */
-export function isOnline(f: Pick<FirmRecord, "lastHeartbeat">): boolean {
-  if (!f.lastHeartbeat) return false;
-  return Date.now() - new Date(f.lastHeartbeat).getTime() < 30 * 60_000;
+/** Online if it checked in within the last 30 minutes. */
+export function isOnline(f: Pick<FirmRecord, "lastSeenAt">): boolean {
+  if (!f.lastSeenAt) return false;
+  return Date.now() - new Date(f.lastSeenAt).getTime() < 30 * 60_000;
+}
+
+/**
+ * Best-effort semver compare: <0 if a<b, 0 if equal, >0 if a>b. Non-numeric versions (e.g. "dev")
+ * fall back to a string compare, so a real release always reads as newer than a dev build.
+ */
+export function compareVersions(a: string, b: string): number {
+  const parse = (v: string) => v.replace(/^v/, "").split("-")[0].split(".").map((n) => parseInt(n, 10));
+  const pa = parse(a);
+  const pb = parse(b);
+  if (pa.some(Number.isNaN) || pb.some(Number.isNaN)) return a === b ? 0 : a < b ? -1 : 1;
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const d = (pa[i] ?? 0) - (pb[i] ?? 0);
+    if (d !== 0) return d < 0 ? -1 : 1;
+  }
+  return 0;
+}
+
+/** True when `current` is a real version strictly older than the promoted `latest`. */
+export function updateAvailable(current?: string, latest?: string | null): boolean {
+  if (!current || !latest) return false;
+  return compareVersions(current, latest) < 0;
 }
 
 /** Show the prefix + last 4 so a key is recognizable without exposing the whole thing on screen. */

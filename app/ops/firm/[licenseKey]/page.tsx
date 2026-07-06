@@ -23,15 +23,23 @@ export default function FirmDetailPage() {
   const [note, setNote] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [targetVersion, setTargetVersion] = useState("");
+  const [releases, setReleases] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch(`/api/ops/firms/${encodeURIComponent(licenseKey)}`, { cache: "no-store" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to load firm");
+      const [firmRes, relRes] = await Promise.all([
+        fetch(`/api/ops/firms/${encodeURIComponent(licenseKey)}`, { cache: "no-store" }),
+        fetch(`/api/ops/releases`, { cache: "no-store" }),
+      ]);
+      const data = await firmRes.json();
+      if (!firmRes.ok) throw new Error(data.error ?? "Failed to load firm");
       setFirm(data.firm as FirmRecord);
       setBilling(data.billing as Billing | null);
+      if (relRes.ok) {
+        const rel = await relRes.json();
+        setReleases((rel.releases as { version: string }[] | undefined)?.map((r) => r.version) ?? []);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load firm");
     }
@@ -96,7 +104,7 @@ export default function FirmDetailPage() {
           <span style={badgeStyle(deployed ? "ok" : "muted")}>{deployed ? "Deployed" : "Pending"}</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7, color: "var(--text-3)", fontSize: 13 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: online ? "var(--ok)" : "var(--text-4)" }} />
-            {firm.lastHeartbeat ? `seen ${timeAgo(firm.lastHeartbeat)}` : "never seen"}
+            {firm.lastSeenAt ? `seen ${timeAgo(firm.lastSeenAt)}` : "never seen"}
           </span>
         </div>
         <p style={{ color: "var(--text-3)", margin: "6px 0 0", fontSize: 14 }}>{firm.email ?? "no billing email"}</p>
@@ -112,9 +120,10 @@ export default function FirmDetailPage() {
           <section style={card}>
             <h2 style={cardTitle}>Telemetry</h2>
             <Field label="Backend version" value={firm.relayVersion ?? "—"} />
+            <Field label="Health" value={firm.boxHealth ?? "—"} />
             <Field label="Active seats" value={firm.activeSeats != null ? `${firm.activeSeats} / ${firm.seats}` : `— / ${firm.seats}`} />
             <Field label="Hostname" value={firm.hostname ?? "—"} />
-            <Field label="Last heartbeat" value={firm.lastHeartbeat ? timeAgo(firm.lastHeartbeat) : "never"} />
+            <Field label="Last seen" value={firm.lastSeenAt ? timeAgo(firm.lastSeenAt) : "never"} />
             <Field label="Target version" value={firm.targetVersion ?? "—"} />
             <Field label="Update status" value={firm.updateStatus ?? "idle"} />
             {firm.updateError && <Field label="Update error" value={firm.updateError} />}
@@ -166,17 +175,24 @@ export default function FirmDetailPage() {
           </div>
 
           <div style={{ marginTop: 18, paddingTop: 18, borderTop: "1px solid var(--line)" }}>
-            <span className="mono" style={{ fontSize: 11 }}>Set target version</span>
+            <span className="mono" style={{ fontSize: 11 }}>Pin an exact version <span style={{ color: "var(--text-4)" }}>(advanced)</span></span>
             <p style={{ color: "var(--text-4)", fontSize: 12, margin: "6px 0 10px" }}>
-              Records the version this box should run. The box-side updater that pulls + installs it is not wired yet (deferred).
+              For canarying a firm ahead of the stable channel, or rolling back to an older release. Most
+              updates should use the one-click <strong>Update</strong> button on the Fleet page.
             </p>
             <div style={{ display: "flex", gap: 10 }}>
               <input
+                list="release-versions"
                 value={targetVersion}
                 onChange={(e) => setTargetVersion(e.target.value)}
                 placeholder="e.g. 0.3.2"
                 style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid var(--line-strong)", background: "var(--bg)", color: "var(--text-1)", fontSize: 14, width: 160, fontFamily: "var(--mono)" }}
               />
+              <datalist id="release-versions">
+                {releases.map((v) => (
+                  <option key={v} value={v} />
+                ))}
+              </datalist>
               <button className="btn-ghost" disabled={busy || !targetVersion.trim()} onClick={() => action("update", { version: targetVersion.trim() }, "Target set")}>
                 Set target
               </button>
