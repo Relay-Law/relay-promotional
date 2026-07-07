@@ -2,11 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { FirmRecord } from "@/lib/store";
-import { OpsNav, badgeStyle, isDeployed, isOnline, maskKey, timeAgo, updateAvailable } from "@/app/ops/ops-ui";
+import { OpsNav, badgeStyle, compareVersions, isDeployed, isOnline, maskKey, timeAgo, updateAvailable } from "@/app/ops/ops-ui";
+
+interface ReleaseInfo {
+  version: string;
+  publishedAt?: string;
+}
 
 export default function FleetPage() {
   const [firms, setFirms] = useState<FirmRecord[] | null>(null);
   const [stable, setStable] = useState<string | null>(null);
+  const [releases, setReleases] = useState<ReleaseInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [promoteVal, setPromoteVal] = useState("");
@@ -21,7 +27,11 @@ export default function FleetPage() {
       const data = await firmsRes.json();
       if (!firmsRes.ok) throw new Error(data.error ?? "Failed to load fleet");
       setFirms(data.firms as FirmRecord[]);
-      if (relRes.ok) setStable(((await relRes.json()).stable as string | null) ?? null);
+      if (relRes.ok) {
+        const rel = await relRes.json();
+        setStable((rel.stable as string | null) ?? null);
+        setReleases((rel.releases as ReleaseInfo[] | undefined) ?? []);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load fleet");
       setFirms([]);
@@ -61,8 +71,8 @@ export default function FleetPage() {
     }
   }
 
-  async function promote() {
-    const version = promoteVal.trim();
+  async function promote(explicit?: string) {
+    const version = (explicit ?? promoteVal).trim();
     if (!version) return;
     setBusy(true);
     setError(null);
@@ -115,10 +125,79 @@ export default function FleetPage() {
             placeholder="e.g. 0.4.0"
             style={{ padding: "8px 11px", borderRadius: 8, border: "1px solid var(--line-strong)", background: "var(--bg)", color: "var(--text-1)", fontSize: 13, width: 120, fontFamily: "var(--mono)" }}
           />
-          <button className="btn-ghost" style={smallBtn} disabled={busy || !promoteVal.trim()} onClick={promote}>
+          <button className="btn-ghost" style={smallBtn} disabled={busy || !promoteVal.trim()} onClick={() => promote()}>
             Promote to stable
           </button>
         </div>
+
+        {/* Latest published release vs. what's promoted — the "a new build is ready" signal. */}
+        {(() => {
+          const latest = releases[0];
+          if (!latest) return null;
+          const unpromoted = !stable || compareVersions(latest.version, stable) > 0;
+          return (
+            <div
+              style={{
+                marginTop: 20,
+                border: `1px solid ${unpromoted ? "var(--line-coral)" : "var(--line)"}`,
+                background: unpromoted ? "var(--coral-tint)" : "var(--surface)",
+                borderRadius: 14,
+                padding: "18px 20px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                <span style={badgeStyle(unpromoted ? "warn" : "ok")}>
+                  {unpromoted ? "New release ready" : "Up to date"}
+                </span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 15, fontWeight: 600 }}>
+                  v{latest.version}
+                </span>
+                {latest.publishedAt && (
+                  <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>
+                    published {timeAgo(latest.publishedAt)}
+                  </span>
+                )}
+                {unpromoted && (
+                  <button
+                    className="btn-ghost"
+                    style={{ ...smallBtn, marginLeft: "auto", color: "var(--coral)", borderColor: "var(--line-coral)" }}
+                    disabled={busy}
+                    onClick={() => promote(latest.version)}
+                  >
+                    Promote v{latest.version} to stable
+                  </button>
+                )}
+              </div>
+
+              {/* Release history — every tag CI has published, newest first. */}
+              <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 2 }}>
+                <span className="mono" style={{ fontSize: 11, color: "var(--text-3)", marginBottom: 6 }}>
+                  RELEASE HISTORY
+                </span>
+                {releases.map((r) => (
+                  <div
+                    key={r.version}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "7px 0",
+                      borderTop: "1px solid var(--line)",
+                      fontSize: 13.5,
+                    }}
+                  >
+                    <span style={{ fontFamily: "var(--mono)", fontWeight: 600, minWidth: 70 }}>v{r.version}</span>
+                    {r.version === stable && <span style={badgeStyle("ok")}>stable</span>}
+                    {r === latest && r.version !== stable && <span style={badgeStyle("muted")}>latest</span>}
+                    <span style={{ color: "var(--text-3)", fontSize: 12.5, marginLeft: "auto" }}>
+                      {r.publishedAt ? timeAgo(r.publishedAt) : "—"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {error && (
           <p style={{ marginTop: 20, color: "var(--coral-deep)", background: "var(--coral-tint)", padding: "10px 14px", borderRadius: 8, fontSize: 13.5 }}>
