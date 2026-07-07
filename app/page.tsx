@@ -2,6 +2,18 @@
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+/* ─── shared Tailwind class recipes ─── */
+const WRAP = "mx-auto w-full max-w-[1240px] px-[var(--pad)]";
+const EYEBROW =
+	"font-sans text-[11px] font-medium tracking-[0.2em] uppercase text-ac";
+const KICKER = "h-0.5 w-10 bg-ac";
+const BTN_BASE =
+	"inline-flex items-center gap-3 font-sans text-[11px] font-medium tracking-[0.16em] uppercase rounded-[2px] border border-coral bg-coral text-white transition-[background-color,color,transform] duration-200 hover:bg-transparent hover:text-coral hover:-translate-y-px disabled:opacity-70 disabled:cursor-default";
+const BTN = `${BTN_BASE} px-6 py-[15px]`;
+const BTN_GHOST =
+	"inline-flex items-center gap-2.5 font-sans text-[11px] font-medium tracking-[0.16em] uppercase px-[22px] py-[15px] rounded-[2px] border border-cream-30 text-cream transition-[border-color] duration-200 hover:border-cream";
+const ARR = "font-display italic";
+
 /* ─── Scroll reveal (toggles .reveal → .in via IntersectionObserver) ─── */
 function useScrollReveal() {
 	useEffect(() => {
@@ -51,19 +63,72 @@ function Nav({ heroRef }: { heroRef: React.RefObject<HTMLElement | null> }) {
 		};
 	}, [heroRef]);
 
+	const linkCls = `transition-colors duration-200 ${
+		solid ? "text-ink-65 hover:text-ink" : "text-cream-45 hover:text-cream"
+	}`;
+	const numCls = "font-display italic normal-case mr-[7px]";
+
 	return (
-		<nav ref={navRef} className={`rl-nav${solid ? " is-solid" : ""}`}>
-			<a href="#top" className="rl-brand">
-				<img src="/relay-logos/white_relay.svg" alt="Relay" className="rl-brand-logo rl-brand-logo--light" />
-				<img src="/relay-logos/black_relay.svg" alt="Relay" className="rl-brand-logo rl-brand-logo--dark" />
+		<nav
+			ref={navRef}
+			className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between py-[20px] px-[var(--pad)] border-b transition-[background-color,border-color,box-shadow,color] duration-[250ms] ${
+				solid
+					? "text-ink border-line bg-[rgba(250,245,232,0.92)] backdrop-blur-[12px] backdrop-saturate-[1.4] shadow-[0_4px_24px_rgba(27,20,13,0.08)]"
+					: "text-cream border-transparent bg-transparent"
+			}`}
+		>
+			<a href="#top" className="relative block leading-none">
+				<img
+					src="/relay-logos/white_relay.svg"
+					alt="Relay"
+					className={`h-[26px] w-auto block transition-opacity duration-[250ms] ${
+						solid ? "opacity-0" : "opacity-100"
+					}`}
+				/>
+				<img
+					src="/relay-logos/black_relay.svg"
+					alt="Relay"
+					className={`absolute left-0 top-0 h-[26px] w-auto block transition-opacity duration-[250ms] ${
+						solid ? "opacity-100" : "opacity-0"
+					}`}
+				/>
 			</a>
-			<div className="rl-nav-links">
-				<a href="#features"><span className="rl-num" style={{ color: "var(--coral)" }}>i.</span>Practice</a>
-				<a href="#privacy"><span className="rl-num" style={{ color: "#7fa8d4" }}>ii.</span>Doctrine</a>
-				<a href="#pricing"><span className="rl-num" style={{ color: "#86b598" }}>iii.</span>Retainer</a>
-				<a href="#waitlist"><span className="rl-num" style={{ color: "#c79bc3" }}>iv.</span>Access</a>
+			<div className="hidden min-[881px]:flex gap-[30px] items-center font-sans text-[11px] tracking-[0.16em] uppercase font-medium">
+				<a href="#features" className={linkCls}>
+					<span className={numCls} style={{ color: "var(--coral)" }}>
+						i.
+					</span>
+					Practice
+				</a>
+				<a href="#privacy" className={linkCls}>
+					<span className={numCls} style={{ color: "#7fa8d4" }}>
+						ii.
+					</span>
+					Doctrine
+				</a>
+				<a href="#pricing" className={linkCls}>
+					<span className={numCls} style={{ color: "#86b598" }}>
+						iii.
+					</span>
+					Retainer
+				</a>
+				<a href="#waitlist" className={linkCls}>
+					<span className={numCls} style={{ color: "#c79bc3" }}>
+						iv.
+					</span>
+					Access
+				</a>
 			</div>
-			<a href="#waitlist" className="rl-nav-cta">Join the Waitlist</a>
+			<a
+				href="#waitlist"
+				className={`font-sans text-[11px] font-medium tracking-[0.16em] uppercase px-4 py-[9px] rounded-[2px] border transition-[border-color,color] duration-200 ${
+					solid
+						? "text-ink border-line hover:border-ink-65"
+						: "text-cream border-cream-30 hover:border-cream"
+				}`}
+			>
+				Join the Waitlist
+			</a>
 		</nav>
 	);
 }
@@ -96,9 +161,14 @@ function WaitlistForm() {
 	}
 
 	return (
-		<form className="rl-form reveal" onSubmit={handleSubmit} noValidate>
+		<form
+			className="reveal flex gap-3 max-w-[520px] mt-2 flex-wrap"
+			onSubmit={handleSubmit}
+			noValidate
+		>
 			<input
 				type="email"
+				className="flex-1 min-w-[220px] bg-[rgba(243,236,220,0.06)] border border-cream-30 rounded-[2px] text-cream px-4 py-[15px] font-sans text-[15px] placeholder:text-cream-45 focus:outline-none focus:border-coral"
 				placeholder={
 					sent ? "You're on the list — see you soon." : "you@yourfirm.com"
 				}
@@ -107,14 +177,18 @@ function WaitlistForm() {
 				onChange={(e) => setEmail(e.target.value)}
 				disabled={sent}
 			/>
-			<button className="rl-btn" type="submit" disabled={loading || sent}>
+			<button
+				className={`${BTN_BASE} px-6 py-[14px]`}
+				type="submit"
+				disabled={loading || sent}
+			>
 				{sent ? (
 					"On the list"
 				) : loading ? (
 					"Joining…"
 				) : (
 					<>
-						Join <span className="arr">→</span>
+						Join <span className={ARR}>→</span>
 					</>
 				)}
 			</button>
@@ -136,8 +210,10 @@ function TickerSequence() {
 		<>
 			{TICKER_ITEMS.map((item) => (
 				<Fragment key={item.text}>
-					<span className="t">{item.text}</span>
-					<span className="d" style={{ color: item.dot }}>
+					<span className="font-display italic text-[24px] text-ink-65 px-[30px] tracking-[-0.01em]">
+						{item.text}
+					</span>
+					<span className="px-[4px] text-[20px]" style={{ color: item.dot }}>
 						·
 					</span>
 				</Fragment>
@@ -177,13 +253,26 @@ function Ticker() {
 	));
 
 	return (
-		<div className="rl-ticker" ref={containerRef} aria-hidden="true">
-			<div className="rl-ticker-measure" ref={measureRef} aria-hidden="true">
+		<div
+			className="relative border-y border-line overflow-hidden py-6"
+			ref={containerRef}
+			aria-hidden="true"
+		>
+			<div
+				className="absolute invisible pointer-events-none flex whitespace-nowrap"
+				ref={measureRef}
+				aria-hidden="true"
+			>
 				<TickerSequence />
 			</div>
-			<div className="rl-ticker-inner">
-				<div className="rl-ticker-track">{track}</div>
-				<div className="rl-ticker-track" aria-hidden="true">
+			<div className="flex w-max animate-[marquee_138s_linear_infinite] will-change-transform">
+				<div className="flex shrink-0 items-center whitespace-nowrap">
+					{track}
+				</div>
+				<div
+					className="flex shrink-0 items-center whitespace-nowrap"
+					aria-hidden="true"
+				>
 					{track}
 				</div>
 			</div>
@@ -202,13 +291,27 @@ function BookImage({
 	label: string;
 }) {
 	if (src) {
-		return <img className="rl-book-img" src={src} alt={alt} />;
+		return (
+			<img
+				className="w-full h-auto max-h-[80vh] object-contain rounded-[6px] block"
+				src={src}
+				alt={alt}
+			/>
+		);
 	}
 	return (
-		<div className="rl-imgph" role="img" aria-label={alt}>
-			<span className="tag">Image</span>
-			<span className="lbl">{label}</span>
-			<span className="note">
+		<div
+			className="relative w-full aspect-[4/3] max-h-[56vh] rounded-[6px] border-[1.5px] border-dashed [border-color:color-mix(in_srgb,var(--ac)_55%,transparent)] bg-[repeating-linear-gradient(-45deg,transparent_0_16px,color-mix(in_srgb,var(--ac)_5%,transparent)_16px_32px)] flex flex-col items-center justify-center gap-2.5 text-center p-6"
+			role="img"
+			aria-label={alt}
+		>
+			<span className="font-sans text-[10px] font-medium tracking-[0.2em] uppercase text-ac border [border-color:color-mix(in_srgb,var(--ac)_40%,transparent)] px-2.5 py-1 rounded-[3px]">
+				Image
+			</span>
+			<span className="font-display italic text-[clamp(17px,1.6vw,22px)] text-ink-65 max-w-[26ch] leading-[1.3]">
+				{label}
+			</span>
+			<span className="font-sans text-[11px] text-ink-30 tracking-[0.04em]">
 				Template — drop the asset in /public/books and pass src
 			</span>
 		</div>
@@ -242,33 +345,50 @@ function Book({
 	total,
 }: BookDef & { index: number; total: number }) {
 	const text = (
-		<div key="text">
-			<div className="rl-book-head">
-				<div className="rl-book-num">{num}</div>
-				<div className="rl-book-meta">
-					<div className="bk">{book}</div>
-					<div className="tg">{tag}</div>
+		<div key="text" className="w-full md:basis-[28%] md:grow-0 md:shrink">
+			<div className="flex items-start gap-[18px] mb-[26px]">
+				<div className="font-display italic text-[64px] leading-[0.8] text-ac">
+					{num}
+				</div>
+				<div className="border-t-2 border-ac pt-3">
+					<div className="font-sans text-[11px] font-medium tracking-[0.18em] uppercase text-ac">
+						{book}
+					</div>
+					<div className="font-sans text-[11px] font-medium tracking-[0.12em] uppercase text-ink-45 mt-1.5">
+						{tag}
+					</div>
 				</div>
 			</div>
-			<h2 className="rl-h2">{title}</h2>
-			<p className="rl-lead">{lead}</p>
-			<ul className="rl-list">
+			<h2 className="font-display font-[340] text-[clamp(30px,3.6vw,50px)] leading-[0.98] tracking-[-0.025em] m-0 mb-[22px] text-ink [&_em]:italic [&_em]:text-ac">
+				{title}
+			</h2>
+			<p className="text-[16.5px] text-ink-65 max-w-[46ch] m-0">{lead}</p>
+			<ul className="rl-hl list-none mt-[26px] p-0 border-t border-line">
 				{items.map(([n, body], i) => (
-					<li key={i}>
-						<span className="mk">{n}</span>
+					<li
+						key={i}
+						className="grid grid-cols-[34px_1fr] gap-[14px] py-[13px] px-[2px] border-b border-line text-[14.5px] text-ink-65"
+					>
+						<span className="font-display italic text-[15px] text-ac pt-px">
+							{n}
+						</span>
 						<span>{body}</span>
 					</li>
 				))}
 			</ul>
 		</div>
 	);
-	const media = <BookImage key="media" {...img} />;
+	const media = (
+		<div key="media" className="w-full md:flex-1">
+			<BookImage {...img} />
+		</div>
+	);
 	return (
 		<article
-			className="rl-bookcard"
+			className="rl-bookcard bg-card border border-line rounded-[10px] shadow-[0_34px_70px_-34px_rgba(27,20,13,0.4)] flex items-center justify-center p-[clamp(22px,4vw,60px)] overflow-hidden"
 			style={{ ...ac(accent), ["--i" as string]: index, zIndex: total - index }}
 		>
-			<div className="rl-bookcard-grid">
+			<div className="w-full max-w-[1600px] flex flex-col md:flex-row gap-[clamp(30px,4.5vw,72px)] items-center">
 				{panelFirst ? [media, text] : [text, media]}
 			</div>
 		</article>
@@ -343,8 +463,8 @@ const BOOKS: BookDef[] = [
 			[
 				"i.",
 				<>
-					<b>Citation verification</b> flags subsequent history against
-					the offline reporter snapshot bundled with Relay.
+					<b>Citation verification</b> flags subsequent history against the
+					offline reporter snapshot bundled with Relay.
 				</>,
 			],
 			[
@@ -357,14 +477,15 @@ const BOOKS: BookDef[] = [
 			[
 				"iii.",
 				<>
-					<b>Argument review</b> gives an even-handed read on which
-					points carry weight — computed entirely on your machine.
+					<b>Argument review</b> gives an even-handed read on which points carry
+					weight — computed entirely on your machine.
 				</>,
 			],
 		],
 		img: {
 			label: "Citation check · Thorngate v. Meridian",
 			alt: "Relay flagging a superseded authority in a brief's table of authorities",
+			src: "/showcase/citation.png",
 		},
 	},
 	{
@@ -383,28 +504,29 @@ const BOOKS: BookDef[] = [
 			[
 				"i.",
 				<>
-					<b>Trigger rules</b> — incoming mail, new filings, and calendar
-					dates set a workflow in motion.
+					<b>Trigger rules</b> — incoming mail, new filings, and calendar dates
+					set a workflow in motion.
 				</>,
 			],
 			[
 				"ii.",
 				<>
-					<b>Local execution</b> — every automation fires on your own
-					machine. Nothing about the matter leaves to run a rule.
+					<b>Local execution</b> — every automation fires on your own machine.
+					Nothing about the matter leaves to run a rule.
 				</>,
 			],
 			[
 				"iii.",
 				<>
-					<b>You set the leash</b> — auto-send the routine, hold the
-					sensitive for review. Each step is yours to gate.
+					<b>You set the leash</b> — auto-send the routine, hold the sensitive
+					for review. Each step is yours to gate.
 				</>,
 			],
 		],
 		img: {
 			label: "Automation · client intake",
 			alt: "A Relay automation drafting a reply and holding it for sign-off",
+			src: "/showcase/automations.png",
 		},
 	},
 	{
@@ -422,28 +544,28 @@ const BOOKS: BookDef[] = [
 			[
 				"i.",
 				<>
-					<b>Activity capture</b> matches documents, windows, and
-					correspondence to the right matter.
+					<b>Activity capture</b> matches documents, windows, and correspondence
+					to the right matter.
 				</>,
 			],
 			[
 				"ii.",
 				<>
-					<b>Review before export</b> — every entry is yours to confirm,
-					edit, or set aside.
+					<b>Review before export</b> — every entry is yours to confirm, edit,
+					or set aside.
 				</>,
 			],
 			[
 				"iii.",
 				<>
-					<b>Clean handoff</b> to Clio, PracticePanther, or a tidy
-					spreadsheet.
+					<b>Clean handoff</b> to Clio, PracticePanther, or a tidy spreadsheet.
 				</>,
 			],
 		],
 		img: {
 			label: "Time entries · this week",
 			alt: "Relay's drafted time entries for the week, ready to bill",
+			src: "/showcase/logtime.png",
 		},
 	},
 	{
@@ -463,30 +585,31 @@ const BOOKS: BookDef[] = [
 				"i.",
 				<>
 					<b>Natural language</b> — &ldquo;cite-check this brief,&rdquo;
-					&ldquo;bill my morning,&rdquo; &ldquo;reply to Calloway.&rdquo;
-					No syntax, no menus to memorize.
+					&ldquo;bill my morning,&rdquo; &ldquo;reply to Calloway.&rdquo; No
+					syntax, no menus to memorize.
 				</>,
 			],
 			[
 				"ii.",
 				<>
-					<b>Every tool, one place</b> — filings, automations, and
-					billing all answer to the same prompt. The chat picks which one
-					to run, and chains them when a request needs several.
+					<b>Every tool, one place</b> — filings, automations, and billing all
+					answer to the same prompt. The chat picks which one to run, and chains
+					them when a request needs several.
 				</>,
 			],
 			[
 				"iii.",
 				<>
-					<b>Grounded and local</b> — it reads the matter in front of you
-					and acts on your machine. Answers point back to the files they
-					came from, and nothing leaves the office.
+					<b>Grounded and local</b> — it reads the matter in front of you and
+					acts on your machine. Answers point back to the files they came from,
+					and nothing leaves the office.
 				</>,
 			],
 		],
 		img: {
 			label: "Chat · ask Relay",
 			alt: "The Relay chat running a citation check and a billing entry from one request",
+			src: "/showcase/allinthechat.png",
 		},
 	},
 	{
@@ -504,30 +627,30 @@ const BOOKS: BookDef[] = [
 			[
 				"i.",
 				<>
-					<b>One shelf</b> — every matter and document gathered in a
-					single browsable view, sorted the way you actually work.
+					<b>One shelf</b> — every matter and document gathered in a single
+					browsable view, sorted the way you actually work.
 				</>,
 			],
 			[
 				"ii.",
 				<>
-					<b>Hop between files</b> — jump from a brief to its exhibits to
-					the client&apos;s last email without losing your place. Recent
-					and related are always a keystroke away.
+					<b>Hop between files</b> — jump from a brief to its exhibits to the
+					client&apos;s last email without losing your place. Recent and related
+					are always a keystroke away.
 				</>,
 			],
 			[
 				"iii.",
 				<>
-					<b>Always at hand</b> — the whole library lives on your
-					machine, so search and open are instant and nothing ever leaves
-					the office.
+					<b>Always at hand</b> — the whole library lives on your machine, so
+					search and open are instant and nothing ever leaves the office.
 				</>,
 			],
 		],
 		img: {
 			label: "Library · all matters",
 			alt: "The Relay library showing every matter and document in one view",
+			src: "/showcase/homepage.png",
 		},
 	},
 	{
@@ -546,29 +669,29 @@ const BOOKS: BookDef[] = [
 			[
 				"i.",
 				<>
-					<b>Shared workspace</b> — the same chats, documents, and
-					matters, open to everyone you bring on.
+					<b>Shared workspace</b> — the same chats, documents, and matters, open
+					to everyone you bring on.
 				</>,
 			],
 			[
 				"ii.",
 				<>
-					<b>One server, many seats</b> — partners, associates, and staff
-					all work from the single machine in your office, in step with
-					each other.
+					<b>One server, many seats</b> — partners, associates, and staff all
+					work from the single machine in your office, in step with each other.
 				</>,
 			],
 			[
 				"iii.",
 				<>
-					<b>Local by default</b> — collaboration without the cloud.
-					Nothing leaves the building to be shared.
+					<b>Local by default</b> — collaboration without the cloud. Nothing
+					leaves the building to be shared.
 				</>,
 			],
 		],
 		img: {
 			label: "Team · shared workspace",
 			alt: "A firm's shared chats and documents in sync across every seat",
+			src: "/showcase/sharing.png",
 		},
 	},
 	{
@@ -586,34 +709,54 @@ const BOOKS: BookDef[] = [
 			[
 				"i.",
 				<>
-					<b>Dates from your documents</b> — upload a filing or an order
-					and Relay pulls the deadlines, hearings, and response dates
-					straight onto your calendar.
+					<b>Dates from your documents</b> — upload a filing or an order and
+					Relay pulls the deadlines, hearings, and response dates straight onto
+					your calendar.
 				</>,
 			],
 			[
 				"ii.",
 				<>
-					<b>Nothing slips</b> — every task and court date in one view,
-					with reminders well before anything comes due.
+					<b>Nothing slips</b> — every task and court date in one view, with
+					reminders well before anything comes due.
 				</>,
 			],
 			[
 				"iii.",
 				<>
-					<b>On your machine</b> — the whole docket lives locally. Your
-					schedule never leaves the office.
+					<b>On your machine</b> — the whole docket lives locally. Your schedule
+					never leaves the office.
 				</>,
 			],
 		],
 		img: {
 			label: "Calendar · upcoming deadlines",
 			alt: "The Relay calendar with deadlines pulled from uploaded filings",
+			src: "/showcase/calendar.png",
 		},
 	},
 ];
 
 /* ═══════════════════════════════ Page ═══════════════════════════════ */
+/* ─── Pricing tiers (hardware, one-time) ─── */
+const TIERS = [
+	{
+		name: "Basic",
+		price: "$1,000",
+		body: "For solo practices and light caseloads. Runs Relay's core models comfortably for everyday drafting, checking, and billing.",
+	},
+	{
+		name: "Moderate",
+		price: "$2,000",
+		body: "For small firms and steady dockets. Stronger models, faster answers, and more headroom across seats.",
+	},
+	{
+		name: "Expert",
+		price: "$5,000",
+		body: "For heavy workloads and demanding matters. Relay's most capable models at full speed, with room for the whole firm.",
+	},
+];
+
 export default function Home() {
 	const heroRef = useRef<HTMLElement>(null);
 	useScrollReveal();
@@ -621,30 +764,41 @@ export default function Home() {
 	return (
 		<div className="rl">
 			<Nav heroRef={heroRef} />
-			<header className="rl-hero" id="top" ref={heroRef}>
-				<div className="rl-hero-img" aria-hidden="true" />
-				<div className="rl-hero-scrim" aria-hidden="true" />
-				<div className="rl-hero-inner">
-					<div className="rl-wrap">
-						<h1 className="rl-h1 reveal">
-							Counsel that <em>never</em>
+			<header
+				className="relative min-h-[95svh] flex flex-col justify-end bg-[#2a211a] overflow-hidden"
+				id="top"
+				ref={heroRef}
+			>
+				<div
+					className="absolute inset-0 z-0 bg-[#2a211a] bg-[url(/hero.jpg)] bg-cover bg-[center_38%] [filter:saturate(0.86)_brightness(0.92)]"
+					aria-hidden="true"
+				/>
+				<div
+					className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(20,14,7,0.32)_0%,rgba(20,14,7,0.06)_32%,rgba(20,14,7,0.2)_58%,rgba(15,9,4,0.82)_100%)]"
+					aria-hidden="true"
+				/>
+				<div className="relative z-[2] w-full pb-[clamp(48px,10vw,120px)]">
+					<div className={WRAP}>
+						<h1 className="reveal font-display font-[340] text-cream m-0 leading-[0.92] tracking-[-0.025em] text-[clamp(46px,9.4vw,140px)] max-w-[15ch]">
+							Legal specialized AI that <em className="rl-hero-mark">never</em>
 							<br />
-							leaves your machine.
+							leaves your office.
 						</h1>
-						<div className="rl-sub reveal">
-							<span className="bar" />A local-first AI for the practice of law
+						<div className="reveal mt-6 flex items-center gap-4 font-sans text-[11.5px] font-medium tracking-[0.16em] uppercase text-cream-45">
+							<span className="w-[42px] h-px bg-cream-30" />A local-first AI for
+							the practice of law
 						</div>
-						<p className="rl-hero-p reveal">
+						<p className="reveal mt-[26px] max-w-[50ch] text-[17px] leading-[1.62] text-[rgba(243,236,220,0.74)]">
 							Unlike many other AI tools, Relay runs entirely on your own
 							hardware; no cloud, no external servers, no worries. All the
 							benefits of AI, without the security risks. Additionally, the
 							system is easy to set up, quick to use, and actually powerful.
 						</p>
-						<div className="rl-hero-actions reveal">
-							<a href="#waitlist" className="rl-btn">
-								Join the waitlist <span className="arr">→</span>
+						<div className="reveal mt-[34px] flex flex-wrap gap-4 items-center">
+							<a href="#waitlist" className={BTN}>
+								Join the waitlist <span className={ARR}>→</span>
 							</a>
-							<a href="#privacy" className="rl-btn-ghost">
+							<a href="#privacy" className={BTN_GHOST}>
 								Read the doctrine
 							</a>
 						</div>
@@ -653,19 +807,17 @@ export default function Home() {
 			</header>
 
 			{/* ── PREMISE ── */}
-			<section className="rl-premise">
-				<div className="rl-wrap reveal">
-					<div className="rl-kicker" />
-					<div
-						className="rl-eyebrow"
-						style={{ marginBottom: 28, display: "block" }}
-					>
+			<section className="py-[clamp(80px,11vw,120px)]">
+				<div className={`${WRAP} reveal`}>
+					<div className={`${KICKER} mb-6`} />
+					<div className={`block mb-7 ${EYEBROW}`}>
 						§ 001 &nbsp;·&nbsp; Premise
 					</div>
-					<p className="rl-premise-quote">
-						Your most privileged work, on the one machine you <em>control.</em>
+					<p className="font-display font-[340] italic text-[clamp(26px,4.4vw,52px)] leading-[1.18] tracking-[-0.02em] max-w-[20ch] m-0 text-ink">
+						Your most privileged work, on the one machine you{" "}
+						<em className="text-coral">control.</em>
 					</p>
-					<p className="rl-premise-body">
+					<p className="mt-[34px] max-w-[58ch] text-[17px] leading-[1.66] text-ink-65">
 						Relay was built for lawyers who treat confidentiality as a duty, not
 						a default setting. Every brief it checks, every file it reads, every
 						hour it records — it does on hardware you own, behind your own door.
@@ -682,20 +834,23 @@ export default function Home() {
 			</section>
 
 			{/* ── PRACTICE FIT ── */}
-			<section className="rl-practice" id="practice">
-				<div className="rl-wrap">
-					<div className="rl-practice-head reveal">
-						<div className="rl-kicker" />
-						<span className="rl-eyebrow">§ &nbsp; Of Practice</span>
-						<h2 className="rl-practice-h2">
+			<section
+				className="py-[clamp(96px,12vw,128px)] border-t border-line"
+				id="practice"
+			>
+				<div className={WRAP}>
+					<div className="reveal max-w-[820px] mb-[54px]">
+						<div className={`${KICKER} mb-6`} />
+						<span className={EYEBROW}>§ &nbsp; Of Practice</span>
+						<h2 className="font-display font-[340] text-[clamp(34px,5.2vw,72px)] leading-[0.98] tracking-[-0.025em] mt-5 mb-0 text-ink [&_em]:italic [&_em]:text-coral">
 							Built for how lawyers <em>actually work.</em>
 						</h2>
-						<p className="rl-practice-intro">
+						<p className="mt-[30px] max-w-[56ch] text-[17px] leading-[1.66] text-ink-65">
 							However your practice is shaped, the rule holds: the work stays in
 							your office.
 						</p>
 					</div>
-					<div className="rl-rows">
+					<div className="max-w-[980px]">
 						{[
 							[
 								"var(--coral)",
@@ -730,14 +885,20 @@ export default function Home() {
 						].map(([color, num, label, quote], i, list) => (
 							<div
 								key={num}
-								className={`rl-row reveal${i === list.length - 1 ? " last" : ""}`}
+								className={`reveal grid grid-cols-[minmax(150px,220px)_1fr] gap-10 py-[30px] border-t border-line items-baseline max-[640px]:grid-cols-1 max-[640px]:gap-[14px]${
+									i === list.length - 1 ? " border-b" : ""
+								}`}
 								style={ac(color)}
 							>
-								<div className="rl-row-num">
+								<div className="font-display italic text-[46px] leading-[0.82] text-ac">
 									{num}
-									<small>{label}</small>
+									<small className="block mt-3 font-sans not-italic text-[10.5px] font-medium tracking-[0.18em] uppercase text-ink-45">
+										{label}
+									</small>
 								</div>
-								<p className="rl-row-q">{quote}</p>
+								<p className="m-0 font-display font-[360] italic text-[clamp(20px,2.4vw,28px)] leading-[1.32] tracking-[-0.015em] text-ink">
+									{quote}
+								</p>
 							</div>
 						))}
 					</div>
@@ -745,18 +906,21 @@ export default function Home() {
 			</section>
 
 			{/* ── PRIVACY DOCTRINE ── */}
-			<section className="rl-privacy" id="privacy">
-				<div className="rl-wrap">
-					<div className="rl-privacy-head reveal">
-						<div className="rl-kicker" />
-						<span className="rl-eyebrow">§ &nbsp; The Privacy Doctrine</span>
-						<h2 className="rl-privacy-h2">
-							<em>We never see anything.</em>
+			<section
+				className="sec-dark py-[clamp(96px,12vw,128px)] border-t border-line"
+				id="privacy"
+			>
+				<div className={WRAP}>
+					<div className="reveal max-w-[760px] mb-16">
+						<div className={`${KICKER} mb-6`} />
+						<span className={EYEBROW}>§ &nbsp; The Privacy Doctrine</span>
+						<h2 className="font-display font-[340] text-[clamp(36px,5.4vw,76px)] leading-[0.98] tracking-[-0.025em] mt-5 text-ink">
+							<em className="italic text-coral">We never see anything.</em>
 							<br />
-							<span className="mut">By design, not by policy.</span>
+							<span className="text-ink-45">By design, not by policy.</span>
 						</h2>
 					</div>
-					<div className="rl-doctrine">
+					<div className="max-w-[920px]">
 						{[
 							[
 								"var(--coral)",
@@ -816,165 +980,248 @@ export default function Home() {
 						].map(([color, num, tag, head, body], i, list) => (
 							<div
 								key={i}
-								className={`rl-drow reveal${i === list.length - 1 ? " last" : ""}`}
+								className={`reveal grid grid-cols-[minmax(120px,150px)_1fr] gap-10 py-[30px] border-t border-line max-[640px]:grid-cols-1 max-[640px]:gap-[14px]${
+									i === list.length - 1 ? " border-b" : ""
+								}`}
 								style={ac(color as string)}
 							>
-								<div className="rl-dnum">
+								<div className="font-display italic text-[52px] leading-[0.85] text-ac">
 									{num}
-									<small>{tag}</small>
+									<small className="block mt-2.5 font-sans not-italic text-[10.5px] font-medium tracking-[0.2em] uppercase text-ink-30">
+										{tag}
+									</small>
 								</div>
 								<div>
-									<h4 className="rl-dhead">{head}</h4>
-									<p className="rl-dbody">{body}</p>
+									<h4 className="font-display font-[360] text-[27px] leading-[1.12] tracking-[-0.015em] m-0 mb-3 text-ink [&_em]:italic [&_em]:text-ac">
+										{head}
+									</h4>
+									<p className="rl-hl m-0 max-w-[60ch] text-[15.5px] leading-[1.6] text-ink-65">
+										{body}
+									</p>
 								</div>
 							</div>
 						))}
 					</div>
-					<div className="rl-seal reveal">
+					<div className="reveal text-center mt-14 font-display italic text-[clamp(26px,3.4vw,40px)] text-ink tracking-[-0.02em]">
 						Enforced in code, not in a contract.
 					</div>
 				</div>
 			</section>
 
 			{/* ── PRICING ── */}
-			<section className="rl-pricing" id="pricing">
-				<div className="rl-wrap">
-					<div className="rl-pricing-head reveal" style={ac("var(--gold)")}>
-						<div className="rl-kicker center" />
-						<span className="rl-eyebrow">§ &nbsp; The Retainer</span>
-						<h2 className="rl-price-h2">
-							One price. <em>No usage games.</em>
+			<section
+				className="py-[clamp(96px,12vw,128px)] border-t border-line"
+				id="pricing"
+			>
+				<div className={WRAP}>
+					<div
+						className="reveal max-w-[760px] mx-auto mb-14 text-center"
+						style={ac("var(--gold)")}
+					>
+						<div className={`${KICKER} mx-auto mb-6`} />
+						<span className={EYEBROW}>§ &nbsp; The Retainer</span>
+						<h2 className="font-display font-[340] text-[clamp(34px,5vw,68px)] leading-[0.98] tracking-[-0.025em] mt-[18px] text-ink">
+							One machine, one rate.{" "}
+							<em className="italic text-coral">No usage games.</em>
 						</h2>
+						<p className="mt-7 max-w-[62ch] mx-auto text-[16.5px] leading-[1.62] text-ink-65">
+							Tired of secretive pricing structures designed to confuse
+							you? So are we. Relay is a one-time machine purchase plus a
+							flat monthly rate per user — all laid out right here. A
+							fair price for an amazing tool, plain and simple.
+						</p>
 					</div>
 
-					<div className="rl-price-figure reveal">
-						<div className="rl-price-amounts">
-							<span className="rl-price-was">$149</span>
-							<span className="rl-price-now">$50</span>
-						</div>
-						<div className="rl-price-unit">per user · per month</div>
-					</div>
-
-					<ul className="rl-price-list reveal">
-						{[
-							[
-								"var(--coral)",
-								"a.",
-								<>
-									<em>Document</em> editing — tables, citations &amp; drafting
-								</>,
-							],
-							[
-								"var(--blue)",
-								"b.",
-								<>
-									<em>Automations</em> that run on their own
-								</>,
-							],
-							[
-								"var(--green)",
-								"c.",
-								<>
-									<em>Automatic</em> billing capture &amp; export
-								</>,
-							],
-							[
-								"var(--plum)",
-								"d.",
-								<>
-									<em>No</em> per-query metering, ever
-								</>,
-							],
-							[
-								"var(--gold)",
-								"e.",
-								<>
-									<em>Runs</em> on your firm&apos;s own hardware
-								</>,
-							],
-							[
-								"var(--coral)",
-								"f.",
-								<>
-									<em>Future</em> features at the same fair price
-								</>,
-							],
-						].map(([color, ix, body], i) => (
-							<li key={i}>
-								<span className="ix" style={{ color: color as string }}>
-									{ix}
+					<div className="reveal grid grid-cols-[repeat(3,1fr)] max-w-[980px] mx-auto border-y border-line max-[880px]:grid-cols-1">
+						{TIERS.map((t) => (
+							<div
+								key={t.name}
+								className="px-7 py-8 border-l border-line first:border-l-0 first:pl-0 last:pr-0 max-[880px]:border-l-0 max-[880px]:px-0 max-[880px]:border-t max-[880px]:first:border-t-0"
+							>
+								<span className="font-sans text-[10.5px] font-medium tracking-[0.2em] uppercase text-coral">
+									{t.name}
 								</span>
-								<span>{body}</span>
-							</li>
+								<div className="font-display italic font-[330] text-[clamp(40px,5vw,56px)] leading-[0.9] tracking-[-0.03em] text-ink mt-5">
+									{t.price}
+								</div>
+								<span className="block font-sans text-[10.5px] font-medium tracking-[0.14em] uppercase text-ink-45 mt-2.5">
+									one-time · hardware
+								</span>
+								<p className="mt-4 text-[14px] leading-[1.6] text-ink-65">{t.body}</p>
+							</div>
 						))}
-					</ul>
+					</div>
+					<p className="reveal mt-[22px] max-w-[980px] mx-auto text-[13.5px] leading-[1.6] text-ink-45">
+						Already own a capable machine?{" "}
+						<a
+							href="mailto:support@relay-law.com"
+							className="text-ink-65 underline underline-offset-[3px] transition-colors duration-200 hover:text-coral"
+						>
+							Contact us
+						</a>{" "}
+						— if the specs qualify, a one-time $300 covers the software.
+					</p>
 
-					<div className="rl-price-cta reveal">
-						<a href="/billing" className="rl-btn">
-							Get started <span className="arr">→</span>
+					<div className="reveal text-center mt-[clamp(72px,9vw,110px)]">
+						<span className="inline-flex items-center gap-2.5 font-sans text-[11px] font-medium tracking-[0.18em] uppercase text-ink border border-line rounded-full px-[18px] py-[9px]">
+							<span className="w-[7px] h-[7px] rounded-full bg-coral" />
+							Early adopter pricing
+						</span>
+						<div className="flex items-baseline justify-center gap-[clamp(16px,3.4vw,34px)] mt-[34px] flex-wrap">
+							<span className="font-display italic font-[340] text-[clamp(34px,5vw,58px)] leading-[0.8] text-ink-30 line-through decoration-2 decoration-coral">
+								$150
+							</span>
+							<span className="font-display font-[330] italic text-[clamp(96px,14vw,176px)] leading-[0.78] tracking-[-0.04em] text-coral">
+								$50
+							</span>
+						</div>
+						<div className="font-sans text-[13px] font-medium tracking-[0.08em] uppercase text-ink-45 mt-5">
+							per user · per month
+						</div>
+						<p className="max-w-[54ch] mx-auto mt-[26px] text-[15px] leading-[1.62] text-ink-65 [&_strong]:text-ink [&_strong]:font-medium">
+							For a limited time only, we&apos;re offering a discounted
+							rate for early adopters. Lock in <strong>$50 per user</strong>{" "}
+							per month for a year during the early-adopter phase, then{" "}
+							<strong>$150</strong> once it closes.
+						</p>
+					</div>
+
+					<div className="reveal mt-12 flex justify-center items-center gap-[22px] flex-wrap">
+						<a href="#waitlist" className={BTN}>
+							Join the waitlist <span className={ARR}>→</span>
 						</a>
-						<a href="#waitlist" className="rl-price-alt">
-							or join the waitlist
+						<a
+							href="/billing"
+							className="font-sans text-[11px] font-medium tracking-[0.1em] uppercase text-ink-45 transition-colors duration-200 hover:text-coral"
+						>
+							or get started today
 						</a>
 					</div>
 				</div>
 			</section>
 
 			{/* ── FINAL CTA ── */}
-			<section className="rl-final" id="waitlist">
-				<div className="rl-final-img" aria-hidden="true" />
-				<div className="rl-final-scrim" aria-hidden="true" />
-				<div className="rl-final-inner">
-					<div className="rl-wrap">
-							<div className="rl-kicker reveal" />
-							<span className="rl-eyebrow reveal">§ &nbsp; Early Access</span>
-							<h2 className="reveal">
-								Be <em>first</em> in line.
-							</h2>
-							<WaitlistForm />
+			<section
+				className="relative min-h-[78vh] flex items-center bg-[#241c16] overflow-hidden"
+				id="waitlist"
+			>
+				<div
+					className="absolute inset-0 z-0 bg-[#241c16] bg-[url(/cta.jpg)] bg-cover bg-[center_50%] [filter:saturate(0.82)_brightness(0.78)]"
+					aria-hidden="true"
+				/>
+				<div
+					className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(15,9,4,0.55),rgba(15,9,4,0.8))]"
+					aria-hidden="true"
+				/>
+				<div className="relative z-[2] w-full">
+					<div className={WRAP}>
+						<div className={`reveal ${KICKER} mb-6`} />
+						<span className="reveal font-sans text-[11px] font-medium tracking-[0.2em] uppercase text-cream-45">
+							§ &nbsp; Early Access
+						</span>
+						<h2 className="reveal font-display font-[330] text-[clamp(40px,6vw,92px)] leading-[0.96] tracking-[-0.025em] text-cream mt-5 mb-[26px] max-w-[14ch]">
+							Be <em className="italic text-coral">first</em> in line.
+						</h2>
+						<WaitlistForm />
 					</div>
 				</div>
 			</section>
 
 			{/* ── FOOTER ── */}
-			<footer className="rl-footer">
-				<div className="rl-wrap">
-					<div className="rl-foot-cols">
-						<div className="rl-foot-lead">
-							<a href="#top" className="rl-brand">
+			<footer className="bg-paper pt-[88px] pb-10 border-t border-line">
+				<div className={WRAP}>
+					<div className="grid grid-cols-[repeat(auto-fit,minmax(160px,1fr))] gap-10 pb-16">
+						<div className="col-span-2 min-w-[240px]">
+							<a href="#top" className="relative block leading-none">
 								<img
 									src="/relay-logos/black_relay.svg"
 									alt="Relay"
 									style={{ height: 26, width: "auto", display: "block" }}
 								/>
 							</a>
-							<p>The AI counsel that runs entirely on your machine.</p>
+							<p className="font-display italic text-[19px] leading-[1.5] text-ink-65 max-w-[30ch] mt-3.5">
+								The AI counsel that runs entirely on your machine.
+							</p>
 						</div>
-						<div className="rl-foot-col" style={ac("var(--coral)")}>
-							<h5>Practice</h5>
-							<a href="#features">Filings</a>
-							<a href="#features">Automations</a>
-							<a href="#features">Billing</a>
+						<div style={ac("var(--coral)")}>
+							<h5 className="font-sans text-[10.5px] font-medium tracking-[0.16em] uppercase text-ac m-0 mb-4">
+								Practice
+							</h5>
+							<a
+								href="#features"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								Filings
+							</a>
+							<a
+								href="#features"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								Automations
+							</a>
+							<a
+								href="#features"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								Billing
+							</a>
 						</div>
-						<div className="rl-foot-col" style={ac("var(--blue)")}>
-							<h5>Company</h5>
-							<a href="#practice">Practice fit</a>
-							<a href="#privacy">The Doctrine</a>
-							<a href="#pricing">Retainer</a>
-							<a href="mailto:support@relay-law.com">Contact</a>
+						<div style={ac("var(--blue)")}>
+							<h5 className="font-sans text-[10.5px] font-medium tracking-[0.16em] uppercase text-ac m-0 mb-4">
+								Company
+							</h5>
+							<a
+								href="#practice"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								Practice fit
+							</a>
+							<a
+								href="#privacy"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								The Doctrine
+							</a>
+							<a
+								href="#pricing"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								Retainer
+							</a>
+							<a
+								href="mailto:support@relay-law.com"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								Contact
+							</a>
 						</div>
-						<div className="rl-foot-col" style={ac("var(--green)")}>
-							<h5>Get started</h5>
-							<a href="#waitlist">Early access</a>
-							<a href="#waitlist">Join the waitlist</a>
+						<div style={ac("var(--green)")}>
+							<h5 className="font-sans text-[10.5px] font-medium tracking-[0.16em] uppercase text-ac m-0 mb-4">
+								Get started
+							</h5>
+							<a
+								href="#waitlist"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								Early access
+							</a>
+							<a
+								href="#waitlist"
+								className="block text-[14.5px] text-ink-65 py-[5px] transition-colors duration-200 hover:text-ink"
+							>
+								Join the waitlist
+							</a>
 						</div>
 					</div>
 
-					<div className="rl-footmark" aria-hidden="true">
+					<div
+						className="font-display font-[330] italic text-[clamp(80px,24vw,300px)] leading-[0.78] tracking-[-0.04em] text-ink pt-10 pb-2"
+						aria-hidden="true"
+					>
 						Relay
 					</div>
 
-					<div className="rl-footbase">
+					<div className="flex justify-between flex-wrap gap-3.5 border-t border-line pt-[26px] font-sans text-[11px] font-medium tracking-[0.1em] uppercase text-ink-45">
 						<span>© 2026 · Relay Legal Technologies, Inc.</span>
 						<span>Local-first · Bar-compliant by default</span>
 					</div>
