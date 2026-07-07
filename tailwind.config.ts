@@ -12,6 +12,8 @@ const config: Config = {
         serif: ["var(--font-onest)", "system-ui", "-apple-system", "sans-serif"],
         sans: ["var(--font-inter-tight)", "system-ui", "-apple-system", "sans-serif"],
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        // Landing-page editorial serif (Fraunces), scoped via the .rl theme.
+        display: ["var(--font-fraunces)", "Georgia", "Times New Roman", "serif"],
       },
       colors: {
         bg: "var(--bg)",
@@ -43,6 +45,17 @@ const config: Config = {
         "line-paper": "var(--line-paper)",
         "line-paper-2": "var(--line-paper-2)",
         "line-coral": "var(--line-coral)",
+        // landing (.rl light theme) tokens
+        ac: "var(--ac)",
+        card: "var(--card)",
+        "ink-65": "var(--ink-65)",
+        "ink-45": "var(--ink-45)",
+        "ink-30": "var(--ink-30)",
+        cream: {
+          DEFAULT: "var(--cream)",
+          45: "var(--cream-45)",
+          30: "var(--cream-30)",
+        },
       },
       keyframes: {
         "pulse-dot": {
