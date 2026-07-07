@@ -738,6 +738,25 @@ const BOOKS: BookDef[] = [
 ];
 
 /* ═══════════════════════════════ Page ═══════════════════════════════ */
+/* ─── Pricing tiers (hardware, one-time) ─── */
+const TIERS = [
+	{
+		name: "Basic",
+		price: "$1,000",
+		body: "For solo practices and light caseloads. Runs Relay's core models comfortably for everyday drafting, checking, and billing.",
+	},
+	{
+		name: "Moderate",
+		price: "$2,000",
+		body: "For small firms and steady dockets. Stronger models, faster answers, and more headroom across seats.",
+	},
+	{
+		name: "Expert",
+		price: "$5,000",
+		body: "For heavy workloads and demanding matters. Relay's most capable models at full speed, with room for the whole firm.",
+	},
+];
+
 export default function Home() {
 	const heroRef = useRef<HTMLElement>(null);
 	useScrollReveal();
@@ -996,99 +1015,86 @@ export default function Home() {
 			>
 				<div className={WRAP}>
 					<div
-						className="reveal max-w-[680px] mx-auto mb-4 text-center"
+						className="reveal max-w-[760px] mx-auto mb-14 text-center"
 						style={ac("var(--gold)")}
 					>
 						<div className={`${KICKER} mx-auto mb-6`} />
 						<span className={EYEBROW}>§ &nbsp; The Retainer</span>
 						<h2 className="font-display font-[340] text-[clamp(34px,5vw,68px)] leading-[0.98] tracking-[-0.025em] mt-[18px] text-ink">
-							One price. <em className="italic text-coral">No usage games.</em>
+							One machine, one rate.{" "}
+							<em className="italic text-coral">No usage games.</em>
 						</h2>
+						<p className="mt-7 max-w-[62ch] mx-auto text-[16.5px] leading-[1.62] text-ink-65">
+							Tired of secretive pricing structures designed to confuse
+							you? So are we. Relay is a one-time machine purchase plus a
+							flat monthly rate per user — all laid out right here. A
+							fair price for an amazing tool, plain and simple.
+						</p>
 					</div>
 
-					<div className="reveal text-center mt-[54px]">
+					<div className="reveal grid grid-cols-[repeat(3,1fr)] max-w-[980px] mx-auto border-y border-line max-[880px]:grid-cols-1">
+						{TIERS.map((t) => (
+							<div
+								key={t.name}
+								className="px-7 py-8 border-l border-line first:border-l-0 first:pl-0 last:pr-0 max-[880px]:border-l-0 max-[880px]:px-0 max-[880px]:border-t max-[880px]:first:border-t-0"
+							>
+								<span className="font-sans text-[10.5px] font-medium tracking-[0.2em] uppercase text-coral">
+									{t.name}
+								</span>
+								<div className="font-display italic font-[330] text-[clamp(40px,5vw,56px)] leading-[0.9] tracking-[-0.03em] text-ink mt-5">
+									{t.price}
+								</div>
+								<span className="block font-sans text-[10.5px] font-medium tracking-[0.14em] uppercase text-ink-45 mt-2.5">
+									one-time · hardware
+								</span>
+								<p className="mt-4 text-[14px] leading-[1.6] text-ink-65">{t.body}</p>
+							</div>
+						))}
+					</div>
+					<p className="reveal mt-[22px] max-w-[980px] mx-auto text-[13.5px] leading-[1.6] text-ink-45">
+						Already own a capable machine?{" "}
+						<a
+							href="mailto:support@relay-law.com"
+							className="text-ink-65 underline underline-offset-[3px] transition-colors duration-200 hover:text-coral"
+						>
+							Contact us
+						</a>{" "}
+						— if the specs qualify, a one-time $300 covers the software.
+					</p>
+
+					<div className="reveal text-center mt-[clamp(72px,9vw,110px)]">
+						<span className="inline-flex items-center gap-2.5 font-sans text-[11px] font-medium tracking-[0.18em] uppercase text-ink border border-line rounded-full px-[18px] py-[9px]">
+							<span className="w-[7px] h-[7px] rounded-full bg-coral" />
+							Early adopter pricing
+						</span>
 						<div className="flex items-baseline justify-center gap-[clamp(16px,3.4vw,34px)] mt-[34px] flex-wrap">
-							<span className="font-display italic font-[340] text-[clamp(36px,5.6vw,66px)] leading-[0.8] text-ink-30 line-through decoration-2 decoration-coral">
-								$149
+							<span className="font-display italic font-[340] text-[clamp(34px,5vw,58px)] leading-[0.8] text-ink-30 line-through decoration-2 decoration-coral">
+								$150
 							</span>
-							<span className="font-display font-[330] italic text-[clamp(116px,17vw,212px)] leading-[0.78] tracking-[-0.04em] text-coral">
+							<span className="font-display font-[330] italic text-[clamp(96px,14vw,176px)] leading-[0.78] tracking-[-0.04em] text-coral">
 								$50
 							</span>
 						</div>
 						<div className="font-sans text-[13px] font-medium tracking-[0.08em] uppercase text-ink-45 mt-5">
 							per user · per month
 						</div>
+						<p className="max-w-[54ch] mx-auto mt-[26px] text-[15px] leading-[1.62] text-ink-65 [&_strong]:text-ink [&_strong]:font-medium">
+							For a limited time only, we&apos;re offering a discounted
+							rate for early adopters. Lock in <strong>$50 per user</strong>{" "}
+							per month for a year during the early-adopter phase, then{" "}
+							<strong>$150</strong> once it closes.
+						</p>
 					</div>
 
-					<ul className="reveal list-none max-w-[760px] mx-auto mt-14 p-0 grid grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-y-0 gap-x-[clamp(32px,5vw,64px)] text-left border-t border-line [&_em]:font-display [&_em]:italic [&_em]:text-ink">
-						{[
-							[
-								"var(--coral)",
-								"a.",
-								<>
-									<em>Document</em> editing — tables, citations &amp; drafting
-								</>,
-							],
-							[
-								"var(--blue)",
-								"b.",
-								<>
-									<em>Automations</em> that run on their own
-								</>,
-							],
-							[
-								"var(--green)",
-								"c.",
-								<>
-									<em>Automatic</em> billing capture &amp; export
-								</>,
-							],
-							[
-								"var(--plum)",
-								"d.",
-								<>
-									<em>No</em> per-query metering, ever
-								</>,
-							],
-							[
-								"var(--gold)",
-								"e.",
-								<>
-									<em>Runs</em> on your firm&apos;s own hardware
-								</>,
-							],
-							[
-								"var(--coral)",
-								"f.",
-								<>
-									<em>Future</em> features at the same fair price
-								</>,
-							],
-						].map(([color, ix, body], i) => (
-							<li
-								key={i}
-								className="grid grid-cols-[26px_1fr] gap-[14px] py-[14px] px-[2px] border-b border-line text-[14.5px] text-ink-65"
-							>
-								<span
-									className="font-display italic"
-									style={{ color: color as string }}
-								>
-									{ix}
-								</span>
-								<span>{body}</span>
-							</li>
-						))}
-					</ul>
-
-					<div className="reveal mt-[44px] flex justify-center items-center gap-[22px] flex-wrap">
-						<a href="/billing" className={BTN}>
-							Get started <span className={ARR}>→</span>
+					<div className="reveal mt-12 flex justify-center items-center gap-[22px] flex-wrap">
+						<a href="#waitlist" className={BTN}>
+							Join the waitlist <span className={ARR}>→</span>
 						</a>
 						<a
-							href="#waitlist"
+							href="/billing"
 							className="font-sans text-[11px] font-medium tracking-[0.1em] uppercase text-ink-45 transition-colors duration-200 hover:text-coral"
 						>
-							or join the waitlist
+							or get started today
 						</a>
 					</div>
 				</div>
