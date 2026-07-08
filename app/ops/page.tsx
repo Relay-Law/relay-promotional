@@ -96,25 +96,8 @@ export default function FleetPage() {
     <main style={{ minHeight: "100vh", background: "var(--bg)", color: "var(--text-1)" }}>
       <OpsNav />
       <div style={{ maxWidth: 1180, margin: "0 auto", padding: "48px 32px 96px" }}>
-        <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16 }}>
-          <div>
-            <span className="mono coral">Management</span>
-            <h1 className="display h3" style={{ margin: "10px 0 0" }}>
-              Computer Fleet
-            </h1>
-          </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <button className="btn-ghost" style={smallBtn} disabled={busy} onClick={() => dev("reindex")}>
-              Reindex
-            </button>
-            <button className="btn-ghost" style={smallBtn} disabled={busy} onClick={load}>
-              Refresh
-            </button>
-          </div>
-        </div>
-
         {/* Stable channel — the version the fleet's one-click "Update" targets. */}
-        <div style={{ marginTop: 20, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <span className="mono" style={{ fontSize: 11, color: "var(--text-3)" }}>
             STABLE CHANNEL
           </span>
@@ -128,6 +111,14 @@ export default function FleetPage() {
           <button className="btn-ghost" style={smallBtn} disabled={busy || !promoteVal.trim()} onClick={() => promote()}>
             Promote to stable
           </button>
+          <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
+            <button className="btn-ghost" style={smallBtn} disabled={busy} onClick={() => dev("reindex")}>
+              Reindex
+            </button>
+            <button className="btn-ghost" style={smallBtn} disabled={busy} onClick={load}>
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Latest published release vs. what's promoted — the "a new build is ready" signal. */}

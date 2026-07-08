@@ -16,6 +16,7 @@
 		"jose": "^6.2.3",
 		"next": "^16.2.9",
 		"next-auth": "^5.0.0-beta.31",
+		"playwright-core": "^1.61.1",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
 		"resend": "^6.12.4",
@@ -32,5 +33,22 @@
 		"postcss": "^8",
 		"tailwindcss": "^3.4.15",
 		"typescript": "^5"
-	}
+	},
+	"description": "The **exact steps** to stand up the billing/licensing system, deploy a firm's server, test it end-to-end, get the first admin online, promote an admin, and invite another attorney to the tailnet.",
+	"main": "index.js",
+	"directories": {
+		"doc": "docs",
+		"lib": "lib"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Miles-Fritzmather/relay-promotional.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/Miles-Fritzmather/relay-promotional/issues"
+	},
+	"homepage": "https://github.com/Miles-Fritzmather/relay-promotional#readme"
 }
