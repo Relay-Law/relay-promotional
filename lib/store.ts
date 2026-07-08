@@ -141,11 +141,15 @@ export async function saveFirm(record: FirmRecord): Promise<void> {
   const value = JSON.stringify({ ...record, updatedAt: new Date().toISOString() });
   const writes: Promise<unknown>[] = [
     client.set(firmKey(record.licenseKey), value),
-    client.set(keyByCustomer(record.stripeCustomerId), record.licenseKey),
     // Fleet index — so the ops dashboard can enumerate firms (Redis is keyed per license key).
     client.sadd(FIRMS_INDEX, record.licenseKey),
   ];
-  // The subscription index only exists once a subscription does (i.e. after activation).
+  // Reverse indexes only exist once Stripe does — a manually-seeded firm has no customer/subscription
+  // id, and writing `firmKeyByCustomer:undefined` would both collide across such firms and (with an
+  // undefined value on some clients) throw. Skip them until the ids are real.
+  if (record.stripeCustomerId) {
+    writes.push(client.set(keyByCustomer(record.stripeCustomerId), record.licenseKey));
+  }
   if (record.subscriptionId) {
     writes.push(client.set(keyBySub(record.subscriptionId), record.licenseKey));
   }
