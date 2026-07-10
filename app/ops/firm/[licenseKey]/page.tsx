@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import type { FirmRecord } from "@/lib/store";
+import type { FirmRecord, FirmUser } from "@/lib/store";
 import { OpsNav, badgeStyle, isDeployed, isOnline, timeAgo } from "@/app/ops/ops-ui";
 
 interface Billing {
@@ -152,6 +152,9 @@ export default function FirmDetailPage() {
           </section>
         </div>
 
+        {/* Members & invites (box-reported roster) */}
+        <Roster users={firm.users} />
+
         {/* Actions */}
         <section style={{ ...card, marginTop: 20 }}>
           <h2 style={cardTitle}>Actions</h2>
@@ -218,8 +221,100 @@ function fmtDate(unixSecs: number | null): string {
   return new Date(unixSecs * 1000).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+/** Parse a SQLite "YYYY-MM-DD HH:MM:SS" (UTC) timestamp into a local date string. */
+function fmtJoined(ts?: string): string {
+  if (!ts) return "—";
+  const d = new Date(ts.includes("T") ? ts : `${ts.replace(" ", "T")}Z`);
+  if (Number.isNaN(d.getTime())) return ts;
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+const SEAT_BADGE: Record<string, "ok" | "warn" | "muted"> = {
+  active: "ok",
+  invited: "warn",
+  disabled: "muted",
+};
+
+/**
+ * Members & invites, mirrored from the box's local user table on its last check-in. Sorted so
+ * pending invites surface at the top; "invited" rows are the people who've been added but haven't
+ * signed in yet (which is why they don't count toward active seats).
+ */
+function Roster({ users }: { users?: FirmUser[] }) {
+  const rows = [...(users ?? [])].sort((a, b) => rank(a.seatStatus) - rank(b.seatStatus));
+  const pending = rows.filter((u) => u.seatStatus === "invited").length;
+
+  return (
+    <section style={{ ...card, marginTop: 20 }}>
+      <h2 style={cardTitle}>
+        Members &amp; invites{" "}
+        <span style={{ fontWeight: 400, color: "var(--text-4)", fontSize: 12 }}>
+          · roster as of last check-in{pending > 0 ? ` · ${pending} pending` : ""}
+        </span>
+      </h2>
+      {rows.length === 0 ? (
+        <p style={{ color: "var(--text-3)", fontSize: 13.5, margin: 0 }}>
+          No roster reported yet — the box sends this on its daily check-in (needs an updated backend).
+        </p>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13.5 }}>
+            <thead>
+              <tr style={{ textAlign: "left" }}>
+                {["Member", "Role", "Status", "Joined"].map((h) => (
+                  <th key={h} style={rosterTh}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((u) => (
+                <tr key={u.email} style={{ borderTop: "1px solid var(--line)" }}>
+                  <td style={rosterTd}>
+                    <div style={{ fontWeight: 500 }}>{u.displayName || u.email}</div>
+                    {u.displayName && (
+                      <div style={{ color: "var(--text-3)", fontSize: 12.5 }}>{u.email}</div>
+                    )}
+                  </td>
+                  <td style={rosterTd}>
+                    {u.role === "admin" ? (
+                      <span style={{ fontWeight: 600 }}>Admin</span>
+                    ) : (
+                      <span style={{ color: "var(--text-3)" }}>{u.role ?? "member"}</span>
+                    )}
+                  </td>
+                  <td style={rosterTd}>
+                    <span style={badgeStyle(SEAT_BADGE[u.seatStatus ?? ""] ?? "muted")}>
+                      {u.seatStatus === "invited" ? "pending" : u.seatStatus ?? "—"}
+                    </span>
+                  </td>
+                  <td style={{ ...rosterTd, color: "var(--text-3)" }}>{fmtJoined(u.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Sort order for the roster: pending invites first, then active, then disabled. */
+function rank(seatStatus?: string): number {
+  return seatStatus === "invited" ? 0 : seatStatus === "active" ? 1 : 2;
+}
+
 const page: React.CSSProperties = { minHeight: "100vh", background: "var(--bg)", color: "var(--text-1)" };
 const wrap: React.CSSProperties = { maxWidth: 900, margin: "0 auto", padding: "40px 32px 96px" };
 const back: React.CSSProperties = { color: "var(--text-3)", fontSize: 13, fontFamily: "var(--mono)" };
 const card: React.CSSProperties = { background: "var(--surface)", border: "1px solid var(--line)", borderRadius: 14, padding: 22 };
 const cardTitle: React.CSSProperties = { fontSize: 15, fontWeight: 500, margin: "0 0 14px" };
+const rosterTh: React.CSSProperties = {
+  padding: "8px 10px",
+  fontFamily: "var(--mono)",
+  fontSize: 10.5,
+  letterSpacing: "0.09em",
+  textTransform: "uppercase",
+  color: "var(--text-3)",
+  fontWeight: 600,
+};
+const rosterTd: React.CSSProperties = { padding: "10px 10px", verticalAlign: "middle" };

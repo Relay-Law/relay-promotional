@@ -765,7 +765,7 @@ export default function Home() {
 		<div className="rl">
 			<Nav heroRef={heroRef} />
 			<header
-				className="relative min-h-[95svh] flex flex-col justify-end bg-[#2a211a] overflow-hidden"
+				className="relative min-h-[98svh] flex flex-col justify-end bg-[#2a211a] overflow-hidden"
 				id="top"
 				ref={heroRef}
 			>
@@ -777,10 +777,10 @@ export default function Home() {
 					className="absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(20,14,7,0.32)_0%,rgba(20,14,7,0.06)_32%,rgba(20,14,7,0.2)_58%,rgba(15,9,4,0.82)_100%)]"
 					aria-hidden="true"
 				/>
-				<div className="relative z-[2] w-full pb-[clamp(48px,10vw,120px)]">
+				<div className="relative z-[2] w-full pb-[clamp(28px,6vw,72px)]">
 					<div className={WRAP}>
-						<h1 className="reveal font-display font-[340] text-cream m-0 leading-[0.92] tracking-[-0.025em] text-[clamp(46px,9.4vw,140px)] max-w-[15ch]">
-							Legal specialized AI that <em className="rl-hero-mark">never</em>
+						<h1 className="reveal font-display font-[340] text-cream m-0 leading-[0.95] sm:leading-[0.92] tracking-[-0.025em] text-[clamp(34px,9.6vw,66px)] sm:text-[clamp(56px,8.8vw,140px)] max-w-[15ch]">
+							Specialized Legal AI that <em className="rl-hero-mark">never</em>
 							<br />
 							leaves your office.
 						</h1>
