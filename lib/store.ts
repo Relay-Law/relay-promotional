@@ -19,6 +19,23 @@ export function getRedis(): Redis {
 }
 
 /**
+ * A single member/seat as reported by the box's check-in. This is PII (emails) mirrored from the
+ * firm's local user table into the control plane so the ops dashboard can show the roster — the
+ * box is the source of truth, this is a snapshot from the last check-in.
+ */
+export interface FirmUser {
+  email: string;
+  /** Display name the firm set, if any. */
+  displayName?: string;
+  /** "admin" | "member" — the box's role model. */
+  role?: string;
+  /** "active" | "invited" | "disabled". "invited" == a pending invite not yet redeemed. */
+  seatStatus?: string;
+  /** When the row was created on the box (SQLite timestamp string). Doubles as "date joined". */
+  createdAt?: string;
+}
+
+/**
  * One firm = one relay-api server = one Stripe subscription = N seats.
  * Keyed by an opaque license key the firm pastes into their server at setup.
  */
@@ -51,6 +68,8 @@ export interface FirmRecord {
   relayVersion?: string;
   /** Seats actually in use, as counted by the box (vs. the licensed `seats`). */
   activeSeats?: number;
+  /** Roster of members and pending invites as of the box's last check-in. See FirmUser. */
+  users?: FirmUser[];
   /** Hostname the box reported — helps identify which machine. */
   hostname?: string;
   /** Overall health the box reported at its last check-in. */

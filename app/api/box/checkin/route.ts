@@ -1,6 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FirmRecord, setFirmTelemetry } from "@/lib/store";
+import { FirmRecord, FirmUser, setFirmTelemetry } from "@/lib/store";
 import { getSignedManifest } from "@/lib/releases";
+
+/** Never mirror an unbounded roster into the control plane, even if the box misbehaves. */
+const MAX_USERS = 500;
+
+/**
+ * Coerce the box-reported `users` payload (snake_case, untrusted) into the stored FirmUser shape.
+ * Drops entries without an email, caps the count, and stringifies every field defensively.
+ */
+function parseUsers(raw: unknown): FirmUser[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const users: FirmUser[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const u = entry as Record<string, unknown>;
+    const email = typeof u.email === "string" ? u.email.trim() : "";
+    if (!email) continue;
+    users.push({
+      email,
+      displayName: typeof u.display_name === "string" ? u.display_name : undefined,
+      role: typeof u.role === "string" ? u.role : undefined,
+      seatStatus: typeof u.seat_status === "string" ? u.seat_status : undefined,
+      createdAt: typeof u.created_at === "string" ? u.created_at : undefined,
+    });
+    if (users.length >= MAX_USERS) break;
+  }
+  return users;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,6 +73,12 @@ export async function POST(request: NextRequest) {
   }
   if (typeof body.active_seats === "number" && Number.isFinite(body.active_seats)) {
     patch.activeSeats = body.active_seats;
+  }
+  // Optional member roster (PII). Only overwrite when the box actually sent an array, so a sparse
+  // check-in from an older box never blanks a previously-reported roster.
+  const users = parseUsers(body.users);
+  if (users) {
+    patch.users = users;
   }
   if (body.health === "ok" || body.health === "degraded" || body.health === "failing") {
     patch.boxHealth = body.health;
