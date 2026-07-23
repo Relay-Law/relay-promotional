@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { FirmRecord, FirmUser, setFirmTelemetry } from "@/lib/store";
 import { getSignedManifest } from "@/lib/releases";
+import { enforce, LIMITS } from "@/lib/ratelimit";
 
 /** Never mirror an unbounded roster into the control plane, even if the box misbehaves. */
 const MAX_USERS = 500;
@@ -57,6 +58,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "license_key required" }, { status: 400 });
   }
 
+  // Per-key cap. Legit boxes check in daily; anything hammering this key is misbehaving or spoofing.
+  const limited = await enforce(`box:checkin:${licenseKey}`, LIMITS.boxCheckinKey);
+  if (limited) return limited;
+
   // Build the telemetry patch from only the fields the box actually sent, so a sparse check-in
   // never blanks out previously-reported values.
   const patch: Partial<FirmRecord> = { lastSeenAt: new Date().toISOString() };
@@ -109,6 +114,26 @@ export async function POST(request: NextRequest) {
 
   if (!firm) {
     return NextResponse.json({ error: "unknown license key" }, { status: 404 });
+  }
+
+  // Reconcile the update badge from ground truth. If the box now reports the exact version ops
+  // targeted, the update has landed — no matter HOW it got there: the macOS auto-updater, a manual
+  // .deb install on a Linux box, or a re-image. relay-update.sh (macOS only) is the sole thing that
+  // ever POSTs an explicit update_status, so without this a Linux box or any hand-install would sit
+  // on "pending" forever. Skip when the box just reported its own status this check-in, so we never
+  // clobber a live "updating"/"failed" the macOS updater sent.
+  if (
+    patch.updateStatus === undefined &&
+    firm.targetVersion &&
+    firm.relayVersion === firm.targetVersion &&
+    firm.updateStatus !== "updated"
+  ) {
+    const reconciled = await setFirmTelemetry(licenseKey, {
+      updateStatus: "updated",
+      lastUpdatedAt: new Date().toISOString(),
+      lastKnownGoodVersion: firm.relayVersion,
+    });
+    if (reconciled) firm = reconciled;
   }
 
   // Update directive: the version ops wants this box on. When the box is actually behind that target,

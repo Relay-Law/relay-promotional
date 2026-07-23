@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Turnstile, turnstileConfigured } from "@/components/Turnstile";
 
 /* ─── shared Tailwind class recipes ─── */
 const WRAP = "mx-auto w-full max-w-[1240px] px-[var(--pad)]";
@@ -138,61 +139,113 @@ const ac = (color: string) =>
 	({ ["--ac" as string]: color }) as React.CSSProperties;
 
 /* ─── Waitlist form (posts to /api/waitlist) ─── */
+/** Turn a Retry-After header (seconds) into a short human phrase. */
+function formatRetry(retryAfterSec: string | null): string {
+	const s = Number(retryAfterSec);
+	if (!Number.isFinite(s) || s <= 0) return "a moment";
+	if (s < 60) return `${Math.ceil(s)} seconds`;
+	const mins = Math.ceil(s / 60);
+	if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"}`;
+	const hrs = Math.ceil(mins / 60);
+	return `${hrs} hour${hrs === 1 ? "" : "s"}`;
+}
+
 function WaitlistForm() {
 	const [email, setEmail] = useState("");
 	const [sent, setSent] = useState(false);
 	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	// Turnstile token (only relevant when the widget is configured). `resetKey` remounts the widget
+	// to fetch a fresh single-use token after a failed attempt.
+	const [token, setToken] = useState<string | null>(null);
+	const [resetKey, setResetKey] = useState(0);
+	const needsToken = turnstileConfigured();
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
 		const val = email.trim();
-		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) return;
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+			setError("Please enter a valid email address.");
+			return;
+		}
+		if (needsToken && !token) {
+			setError("Please complete the verification below.");
+			return;
+		}
 		setLoading(true);
+		setError(null);
 		try {
-			await fetch("/api/waitlist", {
+			const res = await fetch("/api/waitlist", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ email: val }),
+				body: JSON.stringify({ email: val, turnstileToken: token }),
 			});
-		} catch {}
-		setSent(true);
-		setLoading(false);
-		setEmail("");
+			if (res.ok) {
+				setSent(true);
+				setEmail("");
+			} else if (res.status === 429) {
+				setError(
+					`Too many attempts — please try again in ${formatRetry(res.headers.get("Retry-After"))}.`,
+				);
+			} else if (res.status === 403) {
+				setError("Verification failed — please try again.");
+			} else {
+				setError("Something went wrong. Please try again.");
+			}
+		} catch {
+			setError("Network error — check your connection and try again.");
+		} finally {
+			setLoading(false);
+			// A used/failed token can't be reused; get a fresh one for any retry.
+			if (needsToken) {
+				setToken(null);
+				setResetKey((k) => k + 1);
+			}
+		}
 	}
 
 	return (
-		<form
-			className="reveal flex gap-3 max-w-[520px] mt-2 flex-wrap"
-			onSubmit={handleSubmit}
-			noValidate
-		>
-			<input
-				type="email"
-				className="flex-1 min-w-[220px] bg-[rgba(243,236,220,0.06)] border border-cream-30 rounded-[2px] text-cream px-4 py-[15px] font-sans text-[15px] placeholder:text-cream-45 focus:outline-none focus:border-coral"
-				placeholder={
-					sent ? "You're on the list — see you soon." : "you@yourfirm.com"
-				}
-				aria-label="Email address"
-				value={email}
-				onChange={(e) => setEmail(e.target.value)}
-				disabled={sent}
-			/>
-			<button
-				className={`${BTN_BASE} px-6 py-[14px]`}
-				type="submit"
-				disabled={loading || sent}
-			>
-				{sent ? (
-					"On the list"
-				) : loading ? (
-					"Joining…"
-				) : (
-					<>
-						Join <span className={ARR}>→</span>
-					</>
-				)}
-			</button>
-		</form>
+		<div className="reveal max-w-[520px] mt-2">
+			<form className="flex gap-3 flex-wrap" onSubmit={handleSubmit} noValidate>
+				<input
+					type="email"
+					className="flex-1 min-w-[220px] bg-[rgba(243,236,220,0.06)] border border-cream-30 rounded-[2px] text-cream px-4 py-[15px] font-sans text-[15px] placeholder:text-cream-45 focus:outline-none focus:border-coral"
+					placeholder={
+						sent ? "You're on the list — see you soon." : "you@yourfirm.com"
+					}
+					aria-label="Email address"
+					value={email}
+					onChange={(e) => {
+						setEmail(e.target.value);
+						if (error) setError(null);
+					}}
+					disabled={sent}
+				/>
+				<button
+					className={`${BTN_BASE} px-6 py-[14px]`}
+					type="submit"
+					disabled={loading || sent}
+				>
+					{sent ? (
+						"On the list"
+					) : loading ? (
+						"Joining…"
+					) : (
+						<>
+							Join <span className={ARR}>→</span>
+						</>
+					)}
+				</button>
+			</form>
+			{needsToken && !sent && (
+				<Turnstile key={resetKey} onToken={setToken} onExpire={() => setToken(null)} />
+			)}
+			{error && (
+				<p className="mt-2 font-sans text-[13px] text-coral" role="alert">
+					{error}
+				</p>
+			)}
+		</div>
 	);
 }
 

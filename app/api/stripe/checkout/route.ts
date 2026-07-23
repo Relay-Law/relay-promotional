@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { generateLicenseKey, saveFirm } from "@/lib/store";
+import { clientIp, enforce, LIMITS } from "@/lib/ratelimit";
 
 /**
  * Signup step. Because Relay is hardware-gated and on-prem, we do NOT start the trial or any
@@ -16,6 +17,9 @@ import { generateLicenseKey, saveFirm } from "@/lib/store";
  * Body: { seats?: number, email?: string }
  */
 export async function POST(request: NextRequest) {
+  const limited = await enforce(`stripe:checkout:ip:${clientIp(request)}`, LIMITS.stripeIp);
+  if (limited) return limited;
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) {
     return NextResponse.json({ error: "Billing is not configured" }, { status: 500 });

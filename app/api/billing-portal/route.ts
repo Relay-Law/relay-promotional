@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { getFirmByLicenseKey } from "@/lib/store";
+import { clientIp, enforce, LIMITS } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -10,6 +11,9 @@ export const runtime = "nodejs";
  * admin can manage billing from inside Relay. Returns { url }.
  */
 export async function GET(request: NextRequest) {
+  const limited = await enforce(`billing-portal:ip:${clientIp(request)}`, LIMITS.stripeIp);
+  if (limited) return limited;
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) {
     return NextResponse.json({ error: "Billing is not configured" }, { status: 500 });

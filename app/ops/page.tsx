@@ -255,8 +255,15 @@ export default function FleetPage() {
                       </td>
                       <td style={{ ...td, fontFamily: "var(--mono)", fontSize: 12 }}>{maskKey(f.licenseKey)}</td>
                       <td style={td} onClick={(e) => e.stopPropagation()}>
-                        {f.updateStatus === "pending" || f.updateStatus === "updating" ? (
-                          <span style={badgeStyle("warn")}>{f.updateStatus}</span>
+                        {/* A box mid-update is the one live state worth surfacing over version truth. */}
+                        {f.updateStatus === "updating" ? (
+                          <span style={badgeStyle("warn")}>updating</span>
+                        ) : f.relayVersion && stable && !updateAvailable(f.relayVersion, stable) ? (
+                          // Box already reports a version at/after stable — it's current, even if a
+                          // stale "pending" lingers from before it checked in. Truth beats the badge.
+                          <span style={{ color: "var(--ok)", fontSize: 12.5 }}>up to date</span>
+                        ) : f.updateStatus === "pending" ? (
+                          <span style={badgeStyle("warn")}>pending</span>
                         ) : updateAvailable(f.relayVersion, stable) ? (
                           <button
                             className="btn-ghost"
@@ -266,8 +273,6 @@ export default function FleetPage() {
                           >
                             Update → {stable}
                           </button>
-                        ) : f.relayVersion && stable ? (
-                          <span style={{ color: "var(--ok)", fontSize: 12.5 }}>up to date</span>
                         ) : (
                           <span style={{ color: "var(--text-3)", fontSize: 12.5 }}>{f.updateStatus ?? "idle"}</span>
                         )}
