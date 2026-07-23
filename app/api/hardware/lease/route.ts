@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getStripe } from "@/lib/stripe";
 import { DEFAULT_HARDWARE_CENTS, LEASE_MONTHS, LEASE_RATE, quoteLease } from "@/lib/hardware";
+import { clientIp, enforce, LIMITS } from "@/lib/ratelimit";
 
 /**
  * Start a financed-hardware checkout. We create a Checkout subscription with an inline monthly
@@ -12,6 +13,9 @@ import { DEFAULT_HARDWARE_CENTS, LEASE_MONTHS, LEASE_RATE, quoteLease } from "@/
  *   - customerId: reuse an existing Stripe customer (e.g. the firm that bought software); else email.
  */
 export async function POST(request: NextRequest) {
+  const limited = await enforce(`hardware:lease:ip:${clientIp(request)}`, LIMITS.stripeIp);
+  if (limited) return limited;
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) {
     return NextResponse.json({ error: "Billing is not configured" }, { status: 500 });

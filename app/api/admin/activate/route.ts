@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 import { ActivateError, activateFirm } from "@/lib/activate";
+import { clientIp, enforce, LIMITS } from "@/lib/ratelimit";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,10 @@ function authorized(request: NextRequest): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  // Throttle before the key check so the admin key can't be brute-forced at speed.
+  const limited = await enforce(`admin:activate:ip:${clientIp(request)}`, LIMITS.adminIp);
+  if (limited) return limited;
+
   if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }

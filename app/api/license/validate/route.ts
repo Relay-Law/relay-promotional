@@ -1,5 +1,6 @@
 import { mapStripeStatus, signLicense } from "@/lib/license";
 import { getFirmByLicenseKey } from "@/lib/store";
+import { clientIp, enforce, LIMITS } from "@/lib/ratelimit";
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -17,6 +18,11 @@ export const runtime = "nodejs";
  * Unknown keys get 404 (no token).
  */
 export async function POST(request: NextRequest) {
+	// Enumeration cap: a real box calls this ~2x/day, so this ceiling only bites a key scanner
+	// probing for a known-vs-unknown (200-vs-404) oracle.
+	const limited = await enforce(`license:validate:ip:${clientIp(request)}`, LIMITS.licenseValidateIp);
+	if (limited) return limited;
+
 	let licenseKey: string;
 	try {
 		const body = await request.json();
